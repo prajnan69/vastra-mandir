@@ -13,9 +13,18 @@ export default function AdminHubPage() {
     const [pendingCount, setPendingCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
+    useEffect(() => {
+        const session = localStorage.getItem("admin_session");
+        if (session === "true") {
+            setIsAuthenticated(true);
+            fetchStats();
+        }
+    }, []);
+
     const handlePinSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (pin === "6090") {
+            localStorage.setItem("admin_session", "true");
             setIsAuthenticated(true);
             fetchStats();
         } else {
