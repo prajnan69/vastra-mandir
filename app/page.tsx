@@ -89,8 +89,17 @@ export default function Home() {
       </div>
 
       {/* Footer */}
-      <footer className="py-12 text-center text-gray-400 text-xs uppercase tracking-widest border-t border-gray-100">
-        © {new Date().getFullYear()} Vastra Mandir. All Rights Reserved.
+      <footer className="py-12 text-center border-t border-gray-100 bg-white">
+        <p className="font-serif text-xl mb-3 text-black">Vastra Mandir</p>
+        <p className="text-xs text-gray-400 uppercase tracking-widest mb-6">Wear the Essence of Tradition</p>
+
+        <a href="tel:9743174487" className="inline-block border border-gray-200 rounded-full px-5 py-2 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-all hover:border-black mb-8">
+          Need Help? Call +91 9743174487
+        </a>
+
+        <p className="text-gray-300 text-[10px] uppercase tracking-widest">
+          © {new Date().getFullYear()} Vastra Mandir. All Rights Reserved.
+        </p>
       </footer>
     </main>
   );

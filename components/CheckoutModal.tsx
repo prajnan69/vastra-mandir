@@ -26,8 +26,8 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     });
 
     const VALID_PINCODES = ["581333", "581343"];
-    // Using @upi as a generic handle. User might need to change this if it fails (e.g. @ybl, @paytm)
-    const PAYMENT_VPA = "9743174487@upi";
+    // UPDATED VPA
+    const PAYMENT_VPA = "chandannaik54-1@okaxis";
     const WHATSAPP_PHONE = "8660627034";
 
     // Load from local storage
@@ -72,9 +72,39 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         setStep(2);
     };
 
-    const handlePayOnApp = () => {
-        // This tries to open the UPI app intent
-        window.location.href = upiLink;
+    // ACTION: Handle 'Tap to Pay' on Mobile
+    const handlePayOnApp = async () => {
+        // 1. Logic: If user clicks this, we assume they are paying. 
+        // We save the order immediately as 'paid_online' (optimistic) then redirect.
+
+        setLoading(true);
+        try {
+            const { error } = await supabase
+                .from('orders')
+                .insert([{
+                    customer_name: formData.name,
+                    customer_phone: formData.phone,
+                    customer_address: formData.address,
+                    customer_pincode: formData.pincode,
+                    item_title: product.title,
+                    item_price: product.price,
+                    status: 'paid_online' // Optimistic for "App Payment" flow
+                }]);
+
+            if (error) console.error("Error saving order:", error);
+
+            // 2. Trigger Success & Confetti
+            setStep(3);
+            triggerConfetti();
+
+            // 3. Open UPI Intent
+            window.location.href = upiLink;
+
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     const handleConfirm = async (mode: 'online' | 'cod') => {
@@ -101,23 +131,6 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
             // 2. Trigger Success & Confetti
             setStep(3);
             triggerConfetti();
-
-            // 3. Open WhatsApp after short delay
-            const message = `*New Order Placed* 🎉
-    
-*Item*: ${product.title}
-*Price*: ₹${product.price}
-*Payment*: ${mode === 'online' ? 'PAID ONLINE (Verify Check)' : 'Pay on Delivery'}
-
-*Customer Details*:
-Name: ${formData.name}
-Phone: ${formData.phone}
-Pincode: ${formData.pincode}
-Address: ${formData.address}
-`;
-            setTimeout(() => {
-                window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`, "_blank");
-            }, 1000);
 
         } catch (err) {
             console.error("Unexpected error:", err);
