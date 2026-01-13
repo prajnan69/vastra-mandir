@@ -208,25 +208,36 @@ Address: ${formData.address}
                                 <div className="text-3xl font-serif font-medium">₹{product.price.toLocaleString()}</div>
                             </div>
 
-                            {/* QR Section */}
-                            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 flex flex-col items-center gap-4">
+                            {/* QR Section - Hidden on Mobile, Visible on Desktop */}
+                            <div className="hidden md:flex bg-gray-50 p-6 rounded-xl border border-gray-100 flex-col items-center gap-4">
                                 <p className="text-xs font-bold uppercase tracking-widest">Scan to Pay via UPI</p>
-                                {/* Static QR Image */}
                                 <div className="relative w-40 h-40 bg-white p-2 rounded shadow-sm">
                                     <Image src="/qr.png" alt="Scan QR" fill className="object-contain p-2" />
                                 </div>
+                                <p className="text-[10px] text-gray-400">
+                                    UPI ID: {PAYMENT_VPA}
+                                </p>
+                            </div>
 
+                            {/* Mobile Pay Button - Only Visible on Mobile */}
+                            <div className="md:hidden">
                                 <button
                                     onClick={handlePayOnApp}
-                                    className="text-xs text-white bg-blue-600 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                    className="w-full bg-blue-600 text-white py-4 text-xs uppercase tracking-widest hover:bg-blue-700 transition-all flex items-center justify-center gap-2 rounded-xl shadow-lg shadow-blue-200 animate-pulse"
                                 >
-                                    <Smartphone size={14} />
-                                    Tap to Open Payment App
+                                    <Smartphone size={16} />
+                                    Tap to Pay on PhonePe / GPay
                                 </button>
-
-                                <p className="text-[10px] text-gray-400">
-                                    Number: {PAYMENT_VPA.split('@')[0]}
+                                <p className="text-[10px] text-gray-400 mt-2">
+                                    Clicking this will confirm your order and open your payment app.
                                 </p>
+                            </div>
+
+                            {/* Divider */}
+                            <div className="relative flex py-2 items-center">
+                                <div className="flex-grow border-t border-gray-200"></div>
+                                <span className="flex-shrink mx-4 text-gray-400 text-[10px] uppercase tracking-widest">OR</span>
+                                <div className="flex-grow border-t border-gray-200"></div>
                             </div>
 
                             {/* Confirmation Buttons */}
