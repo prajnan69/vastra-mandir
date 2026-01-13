@@ -1,44 +1,45 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Plus, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminUploadPage() {
     const [pin, setPin] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     // Form State
     const [title, setTitle] = useState("");
     const [price, setPrice] = useState("");
     const [description, setDescription] = useState("");
     const [images, setImages] = useState<File[]>([]);
-    const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-    const [uploading, setUploading] = useState(false);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
 
     const handlePinSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (pin === "6090") {
             setIsAuthenticated(true);
         } else {
-            alert("Invalid PIN");
+            alert("Incorrect PIN");
         }
     };
 
     const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newFiles = Array.from(e.target.files);
-            if (images.length + newFiles.length > 5) {
-                alert("Max 5 images allowed");
+            const newImages = Array.from(e.target.files);
+            if (images.length + newImages.length > 5) {
+                alert("Maximum 5 images allowed");
                 return;
             }
+            setImages([...images, ...newImages]);
 
-            setImages([...images, ...newFiles]);
-
-            // Create previews
-            const newPreviews = newFiles.map(file => URL.createObjectURL(file));
-            setImagePreviews([...imagePreviews, ...newPreviews]);
+            // Create preview URLs
+            const newUrls = newImages.map(file => URL.createObjectURL(file));
+            setImageUrls([...imageUrls, ...newUrls]);
         }
     };
 
@@ -47,151 +48,168 @@ export default function AdminUploadPage() {
         newImages.splice(index, 1);
         setImages(newImages);
 
-        const newPreviews = [...imagePreviews];
-        // Revoke url to avoid memory leak
-        URL.revokeObjectURL(newPreviews[index]);
-        newPreviews.splice(index, 1);
-        setImagePreviews(newPreviews);
+        const newUrls = [...imageUrls];
+        URL.revokeObjectURL(newUrls[index]); // Cleanup
+        newUrls.splice(index, 1);
+        setImageUrls(newUrls);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!title || !price || images.length === 0) {
-            alert("Please fill all fields and add at least one image.");
-            return;
-        }
+        setLoading(true);
 
-        setUploading(true);
         try {
             const uploadedImageUrls: string[] = [];
 
-            // 1. Upload Images
-            for (const file of images) {
-                const fileExt = file.name.split('.').pop();
-                const fileName = `${Math.random()}.${fileExt}`;
-                const filePath = `${fileName}`;
-
-                const { error: uploadError } = await supabase.storage
+            // 1. Upload Images to Supabase Storage
+            for (const image of images) {
+                const fileName = `${Date.now()}-${image.name}`;
+                const { data, error } = await supabase.storage
                     .from('products')
-                    .upload(filePath, file);
+                    .upload(fileName, image);
 
-                if (uploadError) throw uploadError;
+                if (error) throw error;
 
                 const { data: { publicUrl } } = supabase.storage
                     .from('products')
-                    .getPublicUrl(filePath);
+                    .getPublicUrl(fileName);
 
                 uploadedImageUrls.push(publicUrl);
             }
 
-            // 2. Insert Record
+            // 2. Insert Item into Database
             const { error: insertError } = await supabase
                 .from('items')
-                .insert({
+                .insert([{
                     title,
                     price: parseFloat(price),
                     description,
-                    images: uploadedImageUrls,
-                });
+                    images: uploadedImageUrls
+                }]);
 
             if (insertError) throw insertError;
 
-            alert("Item uploaded successfully!");
-            // Reset form
+            // Reset Form
             setTitle("");
             setPrice("");
             setDescription("");
             setImages([]);
-            setImagePreviews([]);
+            setImageUrls([]);
+            alert("Item uploaded successfully!");
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Upload error:", error);
-            alert(`Error: ${error.message}`);
+            if (error instanceof Error) {
+                alert(`Error: ${error.message}`);
+            } else {
+                alert("An unknown error occurred during upload.");
+            }
         } finally {
-            setUploading(false);
+            setLoading(false);
         }
     };
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-                <form onSubmit={handlePinSubmit} className="bg-white p-8 rounded-xl shadow-lg w-full max-w-sm space-y-4">
-                    <h1 className="text-xl font-bold text-center">Admin Access</h1>
-                    <input
-                        type="password"
-                        placeholder="Enter PIN"
-                        className="w-full px-4 py-2 border rounded-lg text-center tracking-widest text-2xl"
-                        value={pin}
-                        onChange={(e) => setPin(e.target.value)}
-                        maxLength={4}
-                        autoFocus
-                    />
-                    <button type="submit" className="w-full bg-black text-white py-2 rounded-lg font-semibold">
-                        Unlock
-                    </button>
-                </form>
+            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] text-center p-4">
+                <div className="max-w-xs w-full space-y-8">
+                    <h1 className="font-serif text-2xl tracking-widest uppercase">Admin Access</h1>
+                    <form onSubmit={handlePinSubmit} className="space-y-6">
+                        <input
+                            type="password"
+                            placeholder="Enter PIN"
+                            className="w-full text-center px-4 py-3 bg-transparent border-b border-gray-300 focus:border-black outline-none tracking-[0.5em] text-xl font-light placeholder:tracking-normal placeholder:text-sm"
+                            value={pin}
+                            onChange={(e) => setPin(e.target.value)}
+                        />
+                        <button
+                            type="submit"
+                            className="w-full bg-black text-white py-3 text-xs uppercase tracking-widest hover:bg-gray-900 transition-all"
+                        >
+                            Enter Verification
+                        </button>
+                    </form>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4">
-            <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm p-6 md:p-8">
-                <h1 className="text-2xl font-bold mb-6">Upload New Item</h1>
+        <div className="min-h-screen bg-[#FAFAFA] p-6 md:p-12">
+            <div className="max-w-2xl mx-auto bg-white p-8 md:p-12 shadow-sm border border-gray-50">
+                <div className="mb-12 text-center">
+                    <h1 className="font-serif text-3xl mb-2">New Collection Item</h1>
+                    <p className="text-gray-400 text-xs uppercase tracking-widest">Add details to the catalog</p>
+                </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    <div className="space-y-2">
-                        <label className="font-medium">Item Title</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-lg"
-                            placeholder="e.g. Vintage leather bag"
-                        />
+                <form onSubmit={handleSubmit} className="space-y-12">
+
+                    {/* Basic Info */}
+                    <div className="space-y-8">
+                        <div className="space-y-1">
+                            <label className="text-xs uppercase tracking-widest text-gray-500">Product Title</label>
+                            <input
+                                required
+                                type="text"
+                                placeholder="e.g. Royal Silk Saree"
+                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs uppercase tracking-widest text-gray-500">Price (₹)</label>
+                            <input
+                                required
+                                type="number"
+                                placeholder="0.00"
+                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
+                                value={price}
+                                onChange={(e) => setPrice(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs uppercase tracking-widest text-gray-500">Description</label>
+                            <textarea
+                                placeholder="Describe the fabric, work, and details..."
+                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-light min-h-[100px] resize-none placeholder:text-gray-300 transition-all"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                            />
+                        </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <label className="font-medium">Price (₹)</label>
-                        <input
-                            type="number"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-lg"
-                            placeholder="e.g. 1500"
-                        />
-                    </div>
+                    {/* Image Upload */}
+                    <div className="space-y-4">
+                        <label className="text-xs uppercase tracking-widest text-gray-500 block">Product Imagery</label>
 
-                    <div className="space-y-2">
-                        <label className="font-medium">Description</label>
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full px-4 py-2 border rounded-lg h-32"
-                            placeholder="Item details..."
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <label className="font-medium">Images (Max 5)</label>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                            {imagePreviews.map((src, index) => (
-                                <div key={index} className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group">
-                                    <Image src={src} alt="Preview" fill className="object-cover" />
+                        <div className="grid grid-cols-3 gap-4">
+                            {imageUrls.map((url, index) => (
+                                <div key={index} className="relative aspect-[3/4] group">
+                                    <Image
+                                        src={url}
+                                        alt="Preview"
+                                        fill
+                                        className="object-cover"
+                                    />
                                     <button
                                         type="button"
                                         onClick={() => removeImage(index)}
-                                        className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute top-2 right-2 p-1 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-500"
                                     >
-                                        <X size={16} />
+                                        <X size={14} />
                                     </button>
                                 </div>
                             ))}
 
                             {images.length < 5 && (
-                                <label className="border-2 border-dashed border-gray-300 rounded-lg aspect-square flex flex-col items-center justify-center cursor-pointer hover:border-black transition-colors">
-                                    <Upload className="text-gray-400 mb-2" />
-                                    <span className="text-sm text-gray-500">Add Image</span>
+                                <label className="aspect-[3/4] border border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-all group">
+                                    <div className="p-3 rounded-full bg-gray-50 group-hover:bg-white mb-2 transition-colors">
+                                        <Plus size={20} className="text-gray-400 group-hover:text-black" />
+                                    </div>
+                                    <span className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-black">Add Image</span>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -202,22 +220,31 @@ export default function AdminUploadPage() {
                                 </label>
                             )}
                         </div>
+                        <p className="text-[10px] text-gray-400 text-center">
+                            Upload up to 5 images. First image will be the cover.
+                        </p>
                     </div>
 
                     <button
                         type="submit"
-                        disabled={uploading}
-                        className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        disabled={loading}
+                        className="w-full bg-black text-white py-4 text-xs uppercase tracking-widest hover:bg-gray-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                        {uploading ? (
+                        {loading ? (
                             <>
-                                <Loader2 className="animate-spin mr-2" />
-                                Uploading...
+                                <Loader2 size={16} className="animate-spin" />
+                                PUBLISHING...
                             </>
                         ) : (
-                            "Publish Item"
+                            "PUBLISH TO CATALOG"
                         )}
                     </button>
+
+                    <div className="text-center">
+                        <a href="/" className="text-[10px] uppercase tracking-widest text-gray-400 hover:text-black border-b border-transparent hover:border-black transition-all pb-0.5">
+                            Back to Store
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>

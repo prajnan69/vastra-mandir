@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, CheckCircle } from "lucide-react";
-import Image from "next/image";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -19,7 +18,23 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         name: "",
         address: "",
         phone: "",
+        pincode: "",
     });
+
+    const VALID_PINCODES = ["400001", "400002", "400003", "400004", "400005"];
+
+    // Load from local storage
+    useEffect(() => {
+        const savedData = localStorage.getItem("shippingDetails");
+        if (savedData) {
+            setFormData(JSON.parse(savedData));
+        }
+    }, []);
+
+    // Save to local storage
+    useEffect(() => {
+        localStorage.setItem("shippingDetails", JSON.stringify(formData));
+    }, [formData]);
 
     if (!isOpen) return null;
 
@@ -39,6 +54,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
 *Customer Details*:
 Name: ${formData.name}
 Phone: ${formData.phone}
+Pincode: ${formData.pincode}
 Address: ${formData.address}
 
 *Status*: Payment Completed (Manual Verification Pending)
@@ -50,98 +66,104 @@ Address: ${formData.address}
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            {/* Modal/Sheet Container */}
+            <div className="bg-white w-full md:max-w-md md:rounded-2xl rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300 max-h-[90vh] md:max-h-auto flex flex-col">
+
+                {/* Mobile Handle */}
+                <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-3 mb-1 md:hidden opacity-50"></div>
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="font-semibold text-lg">
-                        {step === 1 ? "Shipping Details" : "Payment"}
+                <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
+                    <h2 className="font-serif text-xl tracking-wide">
+                        {step === 1 ? "Shipping Details" : "Secure Payment"}
                     </h2>
-                    <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">
-                        <X size={20} />
+                    <button onClick={onClose} className="text-gray-400 hover:text-black transition-colors">
+                        <X size={24} />
                     </button>
                 </div>
 
-                {/* content */}
-                <div className="p-6">
+                {/* Content - Scrollable */}
+                <div className="p-6 overflow-y-auto">
                     {step === 1 ? (
-                        <form onSubmit={handleNext} className="space-y-4">
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Full Name</label>
+                        <form onSubmit={handleNext}>
+                            <div className="space-y-6">
                                 <input
                                     required
                                     type="text"
-                                    placeholder="John Doe"
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-black outline-none transition-all"
+                                    placeholder="Full Name"
+                                    className="w-full px-4 py-3 border-b border-gray-200 focus:border-black outline-none placeholder:text-gray-400 transition-all font-light"
                                     value={formData.name}
                                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Phone Number</label>
                                 <input
                                     required
                                     type="tel"
-                                    placeholder="+91 9876543210"
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-black outline-none transition-all"
+                                    placeholder="Phone Number"
+                                    className="w-full px-4 py-3 border-b border-gray-200 focus:border-black outline-none placeholder:text-gray-400 transition-all font-light"
                                     value={formData.phone}
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium">Delivery Address</label>
+                                <div className="space-y-1">
+                                    <label className="text-xs uppercase tracking-widest text-gray-500 pl-1">Select Pincode</label>
+                                    <select
+                                        required
+                                        className="w-full px-4 py-3 border-b border-gray-200 focus:border-black outline-none bg-transparent transition-all font-light appearance-none"
+                                        value={formData.pincode}
+                                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                                    >
+                                        <option value="" disabled>Select Delivery Area</option>
+                                        {VALID_PINCODES.map((pin) => (
+                                            <option key={pin} value={pin}>{pin}</option>
+                                        ))}
+                                    </select>
+                                </div>
                                 <textarea
                                     required
-                                    placeholder="Full address with pincode..."
-                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-black outline-none transition-all min-h-[100px]"
+                                    placeholder="Delivery Address"
+                                    className="w-full px-4 py-3 border-b border-gray-200 focus:border-black outline-none placeholder:text-gray-400 transition-all min-h-[80px] font-light resize-none"
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                 />
                             </div>
                             <button
                                 type="submit"
-                                className="w-full bg-black text-white py-3 rounded-xl font-medium hover:bg-gray-800 transition-all active:scale-95"
+                                className="w-full bg-black text-white py-4 mt-8 text-sm uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95"
                             >
                                 Continue to Payment
                             </button>
                         </form>
                     ) : (
-                        <div className="text-center space-y-6">
+                        <div className="text-center space-y-8 py-4">
                             <div className="space-y-2">
-                                <p className="text-sm text-gray-500">Scan QR to Pay</p>
-                                <div className="text-3xl font-bold">₹{product.price}</div>
+                                <p className="text-xs uppercase tracking-widest text-gray-500">Total Amount</p>
+                                <div className="text-4xl font-serif font-medium">₹{product.price.toLocaleString()}</div>
                             </div>
 
                             {/* QR Code Placeholder */}
-                            <div className="relative w-48 h-48 mx-auto bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300">
-                                <p className="text-xs text-center text-gray-400 p-4">
-                                    REPLACE WITH YOUR QR CODE IMAGE
-                                </p>
-                                {/* 
-                 Uncomment and use actual image:
-                 <Image src="/qr.jpg" alt="QR Code" fill className="object-cover rounded-xl" /> 
-                 */}
+                            <div className="relative w-64 h-64 mx-auto bg-white p-4 border border-gray-100 shadow-sm flex items-center justify-center">
+                                <div className="border border-dashed border-gray-200 w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                    <p className="text-[10px] uppercase tracking-widest mb-2">Scan to Pay</p>
+                                    {/* <Image ... /> */}
+                                </div>
                             </div>
 
-                            <div className="bg-yellow-50 text-yellow-800 p-3 rounded-lg text-sm">
-                                <p>After payment, click confirming below to verify via WhatsApp.</p>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={handleConfirmPayment}
+                                    className="w-full bg-black text-white py-4 text-sm uppercase tracking-widest hover:bg-gray-900 transition-all flex items-center justify-center gap-3 active:scale-95"
+                                >
+                                    <CheckCircle size={18} />
+                                    Confirm Payment
+                                </button>
+
+                                <button
+                                    onClick={() => setStep(1)}
+                                    className="text-xs uppercase tracking-widest text-gray-500 hover:text-black transition-colors"
+                                >
+                                    Go Back
+                                </button>
                             </div>
-
-                            <button
-                                onClick={handleConfirmPayment}
-                                className="w-full bg-green-600 text-white py-3 rounded-xl font-medium hover:bg-green-700 transition-all active:scale-95 flex items-center justify-center gap-2"
-                            >
-                                <CheckCircle size={18} />
-                                I Have Paid
-                            </button>
-
-                            <button
-                                onClick={() => setStep(1)}
-                                className="text-sm text-gray-500 hover:text-black underline"
-                            >
-                                Back to details
-                            </button>
                         </div>
                     )}
                 </div>
