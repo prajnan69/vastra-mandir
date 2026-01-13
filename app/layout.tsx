@@ -6,8 +6,13 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
 
 export const metadata: Metadata = {
-  title: "Premium Store",
-  description: "Curated collection of unique items.",
+  title: "Vastra Mandir",
+  description: "Wear the Essence of Tradition",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Vastra Mandir Admin",
+  },
 };
 
 export default function RootLayout({
