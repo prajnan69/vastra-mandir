@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { X, CheckCircle, Smartphone, Banknote, Loader2 } from "lucide-react";
+import { X, CheckCircle, Smartphone, Banknote, Loader2, ArrowRight } from "lucide-react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 
@@ -26,8 +26,9 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     });
 
     const VALID_PINCODES = ["581333", "581343"];
-    const ADMIN_PHONE = "9743174487"; // Payment Number
-    const WHATSAPP_PHONE = "8660627034"; // Order Notification Number
+    // Using @upi as a generic handle. User might need to change this if it fails (e.g. @ybl, @paytm)
+    const PAYMENT_VPA = "9743174487@upi";
+    const WHATSAPP_PHONE = "8660627034";
 
     // Load from local storage
     useEffect(() => {
@@ -43,17 +44,17 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     }, [formData]);
 
     // Construct UPI Link
-    const upiLink = `upi://pay?pa=${ADMIN_PHONE}&pn=VastraMandir&am=${product.price}&cu=INR`;
-    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(upiLink)}`;
+    // pn (Payee Name) is optional but good for verification
+    const upiLink = `upi://pay?pa=${PAYMENT_VPA}&pn=VastraMandir&am=${product.price}&cu=INR`;
 
     const triggerConfetti = () => {
-        const duration = 3 * 1000;
+        const duration = 2 * 1000;
         const animationEnd = Date.now() + duration;
         const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 200 };
 
         const random = (min: number, max: number) => Math.random() * (max - min) + min;
 
-        const interval: any = setInterval(function() {
+        const interval: any = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
 
             if (timeLeft <= 0) {
@@ -71,9 +72,14 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         setStep(2);
     };
 
-    const handlePayment = async (mode: 'online' | 'cod') => {
+    const handlePayOnApp = () => {
+        // This tries to open the UPI app intent
+        window.location.href = upiLink;
+    };
+
+    const handleConfirm = async (mode: 'online' | 'cod') => {
         setLoading(true);
-        
+
         try {
             // 1. Save to Database
             const { error } = await supabase
@@ -87,23 +93,16 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                     item_price: product.price,
                     status: mode === 'online' ? 'paid_online' : 'cod_pending'
                 }]);
-            
+
             if (error) {
                 console.error("Error saving order:", error);
-                // We typically alert or retry, but let's proceed to success for UX 
-                // typically we'd stop here, but user priority is flow completion
             }
 
             // 2. Trigger Success & Confetti
             setStep(3);
             triggerConfetti();
 
-            // 3. Open WhatsApp after short delay or instantly
-            // We'll prepare the message logic for the "Open WhatsApp" button in Step 3
-            // effectively decoupling the "Place Order" act from the "Notify" act slightly
-            // OR we can open it immediately.
-            // Let's open it immediately as a pop-under or new tab so they see the success screen.
-            
+            // 3. Open WhatsApp after short delay
             const message = `*New Order Placed* 🎉
     
 *Item*: ${product.title}
@@ -117,7 +116,7 @@ Pincode: ${formData.pincode}
 Address: ${formData.address}
 `;
             setTimeout(() => {
-                 window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`, "_blank");
+                window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(message)}`, "_blank");
             }, 1000);
 
         } catch (err) {
@@ -132,13 +131,13 @@ Address: ${formData.address}
 
     return (
         <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center md:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            {/* Modal/Sheet Container */}
-            <div className="bg-white w-full md:max-w-md md:rounded-2xl rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300 max-h-[90vh] md:max-h-auto flex flex-col relative text-center md:text-left">
-                
+            {/* Modal Container */}
+            <div className="bg-white w-full md:max-w-md md:rounded-2xl rounded-t-3xl overflow-hidden animate-in slide-in-from-bottom duration-300 max-h-[90vh] flex flex-col relative text-center md:text-left shadow-2xl">
+
                 {/* Mobile Handle */}
                 <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mt-3 mb-1 md:hidden opacity-50"></div>
 
-                {/* Header (Hid on success step for clean look) */}
+                {/* Header */}
                 {step !== 3 && (
                     <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
                         <h2 className="font-serif text-xl tracking-wide">
@@ -150,11 +149,11 @@ Address: ${formData.address}
                     </div>
                 )}
 
-                {/* Content - Scrollable */}
+                {/* Content */}
                 <div className="p-6 overflow-y-auto">
                     {step === 1 ? (
                         <form onSubmit={handleNext}>
-                             <div className="space-y-6 text-left">
+                            <div className="space-y-6 text-left">
                                 <input
                                     required
                                     type="text"
@@ -202,7 +201,7 @@ Address: ${formData.address}
                         </form>
                     ) : step === 2 ? (
                         <div className="text-center space-y-6">
-                            
+
                             {/* Amount */}
                             <div className="space-y-1 pb-4 border-b border-gray-50">
                                 <p className="text-xs uppercase tracking-widest text-gray-500">Total Amount</p>
@@ -210,61 +209,65 @@ Address: ${formData.address}
                             </div>
 
                             {/* QR Section */}
-                            <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col items-center">
-                                <p className="text-xs font-bold uppercase tracking-widest mb-3">Scan to Pay via UPI</p>
-                                <div className="bg-white p-2 rounded shadow-sm mb-3">
-                                    {/* Using API for QR Generation */}
-                                    <img 
-                                        src={qrCodeUrl} 
-                                        alt="UPI QR Code" 
-                                        width={160} 
-                                        height={160}
-                                        className="mix-blend-multiply"
-                                    />
+                            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 flex flex-col items-center gap-4">
+                                <p className="text-xs font-bold uppercase tracking-widest">Scan to Pay via UPI</p>
+                                {/* Static QR Image */}
+                                <div className="relative w-40 h-40 bg-white p-2 rounded shadow-sm">
+                                    <Image src="/qr.png" alt="Scan QR" fill className="object-contain p-2" />
                                 </div>
-                                <p className="text-xs text-gray-400 font-mono tracking-wide selection:bg-black selection:text-white">
-                                    +91 {ADMIN_PHONE}
+
+                                <button
+                                    onClick={handlePayOnApp}
+                                    className="text-xs text-white bg-blue-600 px-4 py-2 rounded-full font-bold shadow-sm hover:bg-blue-700 transition-colors flex items-center gap-2"
+                                >
+                                    <Smartphone size={14} />
+                                    Tap to Open Payment App
+                                </button>
+
+                                <p className="text-[10px] text-gray-400">
+                                    Number: {PAYMENT_VPA.split('@')[0]}
                                 </p>
                             </div>
 
-                            {/* Actions */}
-                            <div className="space-y-3">
+                            {/* Confirmation Buttons */}
+                            <div className="grid gap-3 pt-2">
                                 <button
-                                    onClick={() => handlePayment('online')}
+                                    onClick={() => handleConfirm('online')}
                                     disabled={loading}
-                                    className="w-full bg-black text-white py-3.5 text-xs uppercase tracking-widest hover:bg-gray-900 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md shadow-black/10"
+                                    className="w-full bg-black text-white py-4 text-xs uppercase tracking-widest hover:bg-gray-900 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-md"
                                 >
-                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <Smartphone size={16} />}
+                                    {loading ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
                                     I Have Paid Online
                                 </button>
-                                
+
                                 <button
-                                    onClick={() => handlePayment('cod')}
+                                    onClick={() => handleConfirm('cod')}
                                     disabled={loading}
-                                    className="w-full bg-white border border-gray-200 text-black py-3.5 text-xs uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95"
+                                    className="w-full bg-white border border-gray-200 text-black py-4 text-xs uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center justify-center gap-2 active:scale-95"
                                 >
                                     {loading ? <Loader2 size={16} className="animate-spin" /> : <Banknote size={16} />}
                                     Pay on Delivery
                                 </button>
-
-                                <button
-                                    onClick={() => setStep(1)}
-                                    className="pt-2 text-[10px] uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
-                                >
-                                    Change Address
-                                </button>
                             </div>
+
+                            <button
+                                onClick={() => setStep(1)}
+                                className="text-[10px] uppercase tracking-widest text-gray-400 hover:text-black transition-colors"
+                            >
+                                Change Address
+                            </button>
                         </div>
                     ) : (
-                        <div className="py-10 text-center space-y-6 animate-in zoom-in duration-300">
-                            <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
-                                <CheckCircle size={40} strokeWidth={3} />
+                        <div className="py-12 text-center space-y-6 animate-in zoom-in duration-300">
+                            <div className="w-24 h-24 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-sm">
+                                <CheckCircle size={48} strokeWidth={3} />
                             </div>
-                            
+
                             <div>
-                                <h2 className="font-serif text-2xl mb-2">Order Confirmed!</h2>
-                                <p className="text-gray-500 text-sm max-w-[260px] mx-auto leading-relaxed">
-                                    Thank you for ordering from Vastra Mandir. We have received your details.
+                                <h2 className="font-serif text-3xl mb-3">Thank You!</h2>
+                                <h3 className="font-medium text-lg">Order Confirmed</h3>
+                                <p className="text-gray-500 text-sm mt-2 max-w-[260px] mx-auto leading-relaxed">
+                                    Your order has been placed successfully. We will ship it soon.
                                 </p>
                             </div>
 
