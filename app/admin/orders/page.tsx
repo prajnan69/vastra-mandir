@@ -37,6 +37,7 @@ export default function AdminOrdersPage() {
             const { data, error } = await supabase
                 .from('orders')
                 .select('*')
+                .in('status', ['pending', 'paid_online', 'cod_pending']) // Only show actionable orders
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -48,13 +49,30 @@ export default function AdminOrdersPage() {
         }
     };
 
-    const sendUpdate = (phone: string, type: 'confirm' | 'ship') => {
-        let message = "";
-        if (type === 'confirm') {
-            message = `Hello! Your order from Vastra Mandir has been *Confirmed*. We will pack it shortly.`;
-        } else {
-            message = `Great news! Your Vastra Mandir order has been *Shipped*. It will reach you soon.`;
+    const handleUpdateStatus = async (id: number, phone: string, item: string, name: string, newStatus: 'confirmed' | 'declined') => {
+        // 1. Update Database
+        const { error } = await supabase
+            .from('orders')
+            .update({ status: newStatus })
+            .eq('id', id);
+
+        if (error) {
+            alert("Error updating order status");
+            console.error(error);
+            return;
         }
+
+        // 2. Refresh List
+        fetchOrders();
+
+        // 3. Open WhatsApp
+        let message = "";
+        if (newStatus === 'confirmed') {
+            message = `Hello ${name}! 🌸\n\nYour order for *${item}* from Vastra Mandir has been *CONFIRMED* ✅.\n\nWe will pack and ship it shortly. Thank you for shopping with us!`;
+        } else {
+            message = `Hello ${name}. \n\nRegarding your order for *${item}* at Vastra Mandir.\n\nUnfortunately, we cannot fulfill this order at this time ❌.\n\nPlease contact us for more details or a refund if applicable.`;
+        }
+
         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
     };
 
@@ -135,18 +153,18 @@ export default function AdminOrdersPage() {
 
                             <div className="grid grid-cols-2 gap-3 mt-4">
                                 <button
-                                    onClick={() => sendUpdate(order.customer_phone, 'confirm')}
-                                    className="flex items-center justify-center gap-2 bg-black text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-gray-800"
+                                    onClick={() => handleUpdateStatus(order.id, order.customer_phone, order.item_title, order.customer_name, 'confirmed')}
+                                    className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-green-700 shadow-sm transition-all active:scale-95"
                                 >
                                     <CheckCircle size={14} />
                                     Accept Order
                                 </button>
                                 <button
-                                    onClick={() => sendUpdate(order.customer_phone, 'ship')}
-                                    className="flex items-center justify-center gap-2 bg-white border border-gray-200 text-black py-3 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-gray-50"
+                                    onClick={() => handleUpdateStatus(order.id, order.customer_phone, order.item_title, order.customer_name, 'declined')}
+                                    className="flex items-center justify-center gap-2 bg-red-50 text-red-600 border border-red-100 py-3 rounded-lg text-xs font-bold uppercase tracking-wide hover:bg-red-100 transition-all active:scale-95"
                                 >
-                                    <Package size={14} />
-                                    Mark Shipped
+                                    <XCircle size={14} />
+                                    Decline Order
                                 </button>
                             </div>
                         </div>
@@ -156,3 +174,5 @@ export default function AdminOrdersPage() {
         </div>
     );
 }
+
+import { XCircle } from "lucide-react";

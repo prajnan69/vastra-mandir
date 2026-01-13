@@ -35,7 +35,6 @@ export default function AdminHubPage() {
     const fetchStats = async () => {
         try {
             const { count, error } = await supabase
-            const { count, error } = await supabase
                 .from('orders')
                 .select('*', { count: 'exact', head: true })
                 .in('status', ['pending', 'paid_online', 'cod_pending']); // Count all active/unprocessed types
