@@ -44,8 +44,8 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     }, [formData]);
 
     // Construct UPI Link
-    // pn (Payee Name) is optional but good for verification
-    const upiLink = `upi://pay?pa=${PAYMENT_VPA}&pn=VastraMandir&am=${product.price}&cu=INR`;
+    // pn removed to let app resolve VPA or show number
+    const upiLink = `upi://pay?pa=${PAYMENT_VPA}&am=${product.price}&cu=INR`;
 
     const triggerConfetti = () => {
         const duration = 2 * 1000;
