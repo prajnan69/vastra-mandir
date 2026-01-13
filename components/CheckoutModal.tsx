@@ -21,7 +21,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         pincode: "",
     });
 
-    const VALID_PINCODES = ["400001", "400002", "400003", "400004", "400005"];
+    const VALID_PINCODES = ["581333", "581343"];
 
     // Load from local storage
     useEffect(() => {
@@ -45,7 +45,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
 
     const handleConfirmPayment = () => {
         // Construct WhatsApp Message
-        const phoneNumber = "YOUR_PHONE_NUMBER"; // REPLACE THIS WITH USER'S NUMBER
+        const phoneNumber = "8660627034";
         const message = `*New Order Placed*
     
 *Item*: ${product.title}
@@ -57,7 +57,7 @@ Phone: ${formData.phone}
 Pincode: ${formData.pincode}
 Address: ${formData.address}
 
-*Status*: Payment Completed (Manual Verification Pending)
+*Payment Mode*: Pay on Delivery (COD)
     `;
 
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -76,7 +76,7 @@ Address: ${formData.address}
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-100 flex-shrink-0">
                     <h2 className="font-serif text-xl tracking-wide">
-                        {step === 1 ? "Shipping Details" : "Secure Payment"}
+                        {step === 1 ? "Shipping Details" : "Confirm Order"}
                     </h2>
                     <button onClick={onClose} className="text-gray-400 hover:text-black transition-colors">
                         <X size={24} />
@@ -130,7 +130,7 @@ Address: ${formData.address}
                                 type="submit"
                                 className="w-full bg-black text-white py-4 mt-8 text-sm uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95"
                             >
-                                Continue to Payment
+                                Continue
                             </button>
                         </form>
                     ) : (
@@ -140,12 +140,11 @@ Address: ${formData.address}
                                 <div className="text-4xl font-serif font-medium">₹{product.price.toLocaleString()}</div>
                             </div>
 
-                            {/* QR Code Placeholder */}
-                            <div className="relative w-64 h-64 mx-auto bg-white p-4 border border-gray-100 shadow-sm flex items-center justify-center">
-                                <div className="border border-dashed border-gray-200 w-full h-full flex flex-col items-center justify-center text-gray-400">
-                                    <p className="text-[10px] uppercase tracking-widest mb-2">Scan to Pay</p>
-                                    {/* <Image ... /> */}
-                                </div>
+                            <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 space-y-2">
+                                <h3 className="font-serif text-lg">Pay on Delivery</h3>
+                                <p className="text-xs text-gray-500 leading-relaxed">
+                                    Place your order now via WhatsApp. You can pay via Cash or UPI when the item arrives.
+                                </p>
                             </div>
 
                             <div className="space-y-4">
@@ -154,14 +153,14 @@ Address: ${formData.address}
                                     className="w-full bg-black text-white py-4 text-sm uppercase tracking-widest hover:bg-gray-900 transition-all flex items-center justify-center gap-3 active:scale-95"
                                 >
                                     <CheckCircle size={18} />
-                                    Confirm Payment
+                                    Place Order on WhatsApp
                                 </button>
 
                                 <button
                                     onClick={() => setStep(1)}
                                     className="text-xs uppercase tracking-widest text-gray-500 hover:text-black transition-colors"
                                 >
-                                    Go Back
+                                    Edit Details
                                 </button>
                             </div>
                         </div>
