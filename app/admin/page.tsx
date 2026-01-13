@@ -30,8 +30,6 @@ export default function AdminHubPage() {
                 .select('*', { count: 'exact', head: true })
                 .eq('status', 'pending');
 
-            if (data) console.log("stats", count); // debugging
-
             if (count !== null) setPendingCount(count);
         } catch (error) {
             console.error("Error fetching stats:", error);
