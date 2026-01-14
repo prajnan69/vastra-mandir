@@ -27,7 +27,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
 
     const VALID_PINCODES = ["581333", "581343"];
     // UPDATED VPA
-    const PAYMENT_VPA = "chandannaik54-1@okaxis";
+    const PAYMENT_VPA = "7892460628@axl";
     const WHATSAPP_PHONE = "8660627034";
 
     // Load from local storage
