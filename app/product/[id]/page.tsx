@@ -23,7 +23,7 @@ export default function ProductPage() {
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-    const PRODUCT_URL_BASE = "https://vastra-mandir.vercel.app/product/";
+    const PRODUCT_URL_BASE = "https://vasrtramandir.com/product/";
 
     useEffect(() => {
         if (params?.id) {
