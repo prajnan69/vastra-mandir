@@ -8,6 +8,18 @@ import { Upload, X, Loader2, Plus, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminUploadPage() {
+    const [pin, setPin] = useState("");
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [loading, setLoading] = useState(false);
+
+    // Form State
+    const [title, setTitle] = useState("");
+    const [price, setPrice] = useState("");
+    const [description, setDescription] = useState("");
+    const [images, setImages] = useState<File[]>([]);
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
+
+    // Uploaded Item State for Success View
     const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, description: string, id: number } | null>(null);
 
     const handlePinSubmit = (e: React.FormEvent) => {
