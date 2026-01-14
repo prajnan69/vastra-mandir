@@ -178,7 +178,7 @@ export default function AdminUploadPage() {
                     <div className="bg-gray-50 p-4 rounded-xl text-left text-sm space-y-2 border border-gray-100">
                         <p className="font-bold">{uploadedItem.title}</p>
                         <p className="text-gray-500 line-clamp-2">{uploadedItem.description}</p>
-                        <p className="text-blue-600 underline text-xs break-all">https://vasrtramandir.com/product/{uploadedItem.id}</p>
+                        <p className="text-blue-600 underline text-xs break-all">https://vastra-mandir.vercel.app/product/{uploadedItem.id}</p>
                     </div>
 
                     <button

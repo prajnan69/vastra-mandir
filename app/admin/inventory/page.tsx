@@ -123,7 +123,7 @@ export default function InventoryPage() {
 
                                 <button
                                     onClick={() => {
-                                        const text = `*${item.title}*\n\n*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: https://vasrtramandir.com/product/${item.id}`;
+                                        const text = `*${item.title}*\n\n*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: https://vastra-mandir.vercel.app/product/${item.id}`;
                                         navigator.clipboard.writeText(text);
                                         alert("Link copied!");
                                     }}
