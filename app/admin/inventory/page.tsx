@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff, Share2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -108,8 +108,8 @@ export default function InventoryPage() {
                                     onClick={() => toggleSoldOut(item.id, item.is_sold_out)}
                                     disabled={togglingId === item.id}
                                     className={`flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs font-bold uppercase tracking-wide transition-colors ${item.is_sold_out
-                                            ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                                            : 'bg-black text-white hover:bg-gray-800'
+                                        ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        : 'bg-black text-white hover:bg-gray-800'
                                         }`}
                                 >
                                     {togglingId === item.id ? (
@@ -119,6 +119,17 @@ export default function InventoryPage() {
                                     ) : (
                                         <>Mark Sold Out <EyeOff size={14} /></>
                                     )}
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        const text = `*${item.title}*\n\n*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: https://vastra-mandir.vercel.app/product/${item.id}`;
+                                        navigator.clipboard.writeText(text);
+                                        alert("Link copied!");
+                                    }}
+                                    className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs font-bold uppercase tracking-wide bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                >
+                                    Copy <Share2 size={14} />
                                 </button>
                             </div>
                         </div>

@@ -8,16 +8,7 @@ import { Upload, X, Loader2, Plus, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
 
 export default function AdminUploadPage() {
-    const [pin, setPin] = useState("");
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [loading, setLoading] = useState(false);
-
-    // Form State
-    const [title, setTitle] = useState("");
-    const [price, setPrice] = useState("");
-    const [description, setDescription] = useState("");
-    const [images, setImages] = useState<File[]>([]);
-    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, description: string, id: number } | null>(null);
 
     const handlePinSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -78,24 +69,35 @@ export default function AdminUploadPage() {
             }
 
             // 2. Insert Item into Database
-            const { error: insertError } = await supabase
+            const { data, error: insertError } = await supabase
                 .from('items')
                 .insert([{
                     title,
                     price: parseFloat(price),
                     description,
                     images: uploadedImageUrls
-                }]);
+                }])
+                .select()
+                .single();
 
             if (insertError) throw insertError;
 
-            // Reset Form
+            // 3. Show Success & Copy Option
+            if (data) {
+                setUploadedItem({
+                    title,
+                    price,
+                    description,
+                    id: data.id
+                });
+            }
+
+            // Reset Form (Wait for user to dismiss success screen to fully reset logic if needed, but here we just clear state)
             setTitle("");
             setPrice("");
             setDescription("");
             setImages([]);
             setImageUrls([]);
-            alert("Item uploaded successfully!");
 
         } catch (error: unknown) {
             console.error("Upload error:", error);
@@ -107,6 +109,19 @@ export default function AdminUploadPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const copyForWhatsApp = () => {
+        if (!uploadedItem) return;
+        const link = `https://vastramandir.com/product/${uploadedItem.id}`;
+        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
+
+        navigator.clipboard.writeText(text);
+        alert("Copied to clipboard! Ready to paste in WhatsApp.");
+    };
+
+    const resetUpload = () => {
+        setUploadedItem(null);
     };
 
     if (!isAuthenticated) {
@@ -129,6 +144,44 @@ export default function AdminUploadPage() {
                             Enter Verification
                         </button>
                     </form>
+                </div>
+            </div>
+        );
+    }
+
+    if (uploadedItem) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4">
+                <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg text-center space-y-6 animate-in zoom-in duration-300">
+                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
+                        <Loader2 size={0} className="hidden" /> {/* Dummy to keep import valid if unused */}
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+
+                    <div>
+                        <h2 className="font-serif text-2xl mb-2">Item Published!</h2>
+                        <p className="text-gray-500 text-sm">Your item is now live on the store.</p>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-xl text-left text-sm space-y-2 border border-gray-100">
+                        <p className="font-bold">{uploadedItem.title}</p>
+                        <p className="text-gray-500 line-clamp-2">{uploadedItem.description}</p>
+                        <p className="text-blue-600 underline text-xs break-all">https://vastra-mandir.vercel.app/product/{uploadedItem.id}</p>
+                    </div>
+
+                    <button
+                        onClick={copyForWhatsApp}
+                        className="w-full bg-green-600 text-white py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-green-700 shadow-lg shadow-green-100 transition-all flex items-center justify-center gap-2"
+                    >
+                        Copy for WhatsApp
+                    </button>
+
+                    <button
+                        onClick={resetUpload}
+                        className="w-full text-gray-400 text-xs uppercase tracking-widest hover:text-black mt-4"
+                    >
+                        Upload Another Item
+                    </button>
                 </div>
             </div>
         );

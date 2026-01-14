@@ -76,6 +76,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
     const handlePayOnApp = async () => {
         // 1. Logic: If user clicks this, we assume they are paying. 
         // We save the order immediately as 'paid_online' (optimistic) then redirect.
+        // WE DO NOT SHOW SUCCESS SCREEN YET. User must manually verify or "I Have Paid" later.
 
         setLoading(true);
         try {
@@ -93,11 +94,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
 
             if (error) console.error("Error saving order:", error);
 
-            // 2. Trigger Success & Confetti
-            setStep(3);
-            triggerConfetti();
-
-            // 3. Open UPI Intent
+            // 2. Open UPI Intent ONLY (No Confetti yet)
             window.location.href = upiLink;
 
         } catch (err) {
