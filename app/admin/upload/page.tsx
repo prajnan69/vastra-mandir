@@ -125,7 +125,7 @@ export default function AdminUploadPage() {
 
     const copyForWhatsApp = () => {
         if (!uploadedItem) return;
-        const link = `https://vastramandir.com/product/${uploadedItem.id}`;
+        const link = `https://vastra-mandir.vercel.app/product/${uploadedItem.id}`;
         const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
 
         navigator.clipboard.writeText(text);
