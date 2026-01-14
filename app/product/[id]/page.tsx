@@ -148,16 +148,6 @@ export default function ProductPage() {
                         >
                             Buy Now
                         </button>
-
-                        <a
-                            href={`https://wa.me/919743174487?text=Hi, I am interested in ${item.title}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full bg-green-50 text-green-700 border border-green-100 py-4 rounded-full text-sm uppercase tracking-widest hover:bg-green-100 transition-all flex items-center justify-center gap-2"
-                        >
-                            <MessageCircle size={18} />
-                            Enquire on WhatsApp
-                        </a>
                     </div>
                 </div>
             </div>
