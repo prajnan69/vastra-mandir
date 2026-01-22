@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Loader2, Eye, EyeOff, Share2 } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff, Share2, Edit2, Check, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -12,6 +12,7 @@ interface Item {
     id: number;
     title: string;
     price: number;
+    mrp: number | null;
     images: string[];
     is_sold_out: boolean;
 }
@@ -20,6 +21,9 @@ export default function InventoryPage() {
     const [items, setItems] = useState<Item[]>([]);
     const [loading, setLoading] = useState(true);
     const [togglingId, setTogglingId] = useState<number | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [editMrp, setEditMrp] = useState("");
+    const [savingMrp, setSavingMrp] = useState(false);
 
     useEffect(() => {
         fetchItems();
@@ -63,6 +67,39 @@ export default function InventoryPage() {
         }
     };
 
+    const startEditing = (item: Item) => {
+        setEditingId(item.id);
+        setEditMrp(item.mrp?.toString() || "");
+    };
+
+    const cancelEditing = () => {
+        setEditingId(null);
+        setEditMrp("");
+    };
+
+    const saveMrp = async (id: number) => {
+        setSavingMrp(true);
+        try {
+            const newMrp = editMrp ? parseFloat(editMrp) : null;
+            const { error } = await supabase
+                .from('items')
+                .update({ mrp: newMrp })
+                .eq('id', id);
+
+            if (error) throw error;
+
+            setItems(items.map(item =>
+                item.id === id ? { ...item, mrp: newMrp } : item
+            ));
+            setEditingId(null);
+        } catch (error) {
+            console.error("Error updating MRP:", error);
+            alert("Failed to update MRP");
+        } finally {
+            setSavingMrp(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 pb-20">
             {/* Header */}
@@ -101,7 +138,49 @@ export default function InventoryPage() {
                             <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                                 <div>
                                     <h3 className={`font-medium truncate ${item.is_sold_out ? 'text-gray-500' : 'text-gray-900'}`}>{item.title}</h3>
-                                    <p className="text-sm font-semibold text-gray-500">₹{item.price.toLocaleString()}</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm font-semibold text-gray-500">₹{item.price.toLocaleString()}</p>
+
+                                        {/* MRP Editable Section */}
+                                        {editingId === item.id ? (
+                                            <div className="flex items-center gap-1 ml-2">
+                                                <input
+                                                    type="number"
+                                                    value={editMrp}
+                                                    onChange={(e) => setEditMrp(e.target.value)}
+                                                    className="w-20 px-2 py-1 text-sm border border-black rounded"
+                                                    placeholder="MRP"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    onClick={() => saveMrp(item.id)}
+                                                    disabled={savingMrp}
+                                                    className="p-1 bg-black text-white rounded hover:bg-gray-800"
+                                                >
+                                                    {savingMrp ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                                </button>
+                                                <button
+                                                    onClick={cancelEditing}
+                                                    className="p-1 bg-gray-200 text-gray-600 rounded hover:bg-gray-300"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-1 ml-2 group cursor-pointer" onClick={() => startEditing(item)}>
+                                                {item.mrp ? (
+                                                    <p className="text-xs text-gray-400 line-through decoration-gray-400">
+                                                        ₹{item.mrp.toLocaleString()}
+                                                    </p>
+                                                ) : (
+                                                    <span className="text-[10px] bg-gray-100 text-gray-500 px-1 rounded border border-dashed border-gray-300">
+                                                        + MRP
+                                                    </span>
+                                                )}
+                                                <Edit2 size={10} className="text-gray-300 group-hover:text-black opacity-0 group-hover:opacity-100 transition-all" />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
 
                                 <button
@@ -123,7 +202,8 @@ export default function InventoryPage() {
 
                                 <button
                                     onClick={() => {
-                                        const text = `*${item.title}*\n\n*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: https://vastra-mandir.vercel.app/product/${item.id}`;
+                                        const link = `https://vastra-mandir.vercel.app/product/${item.id}`;
+                                        const text = `*${item.title}*\n\n${item.mrp ? `*MRP: ~₹${item.mrp}~* ` : ''}*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: ${link}`;
                                         navigator.clipboard.writeText(text);
                                         alert("Link copied!");
                                     }}
