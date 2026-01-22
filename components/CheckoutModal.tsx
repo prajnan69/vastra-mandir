@@ -25,7 +25,7 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         pincode: "",
     });
 
-    const VALID_PINCODES = ["581333", "581343"];
+
     // UPDATED VPA
     const PAYMENT_VPA = "7892460628@axl";
     const WHATSAPP_PHONE = "8660627034";
@@ -181,18 +181,14 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 />
                                 <div className="space-y-1 text-left">
-                                    <label className="text-xs uppercase tracking-widest text-gray-500 pl-1">Select Pincode</label>
-                                    <select
+                                    <input
                                         required
-                                        className="w-full px-4 py-3 border-b border-gray-200 focus:border-black outline-none bg-transparent transition-all font-light appearance-none"
+                                        type="number"
+                                        placeholder="Pincode"
+                                        className="w-full px-4 py-3 border-b border-gray-200 focus:border-black outline-none placeholder:text-gray-400 transition-all font-light"
                                         value={formData.pincode}
                                         onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                                    >
-                                        <option value="" disabled>Select Delivery Area</option>
-                                        {VALID_PINCODES.map((pin) => (
-                                            <option key={pin} value={pin}>{pin}</option>
-                                        ))}
-                                    </select>
+                                    />
                                 </div>
                                 <textarea
                                     required

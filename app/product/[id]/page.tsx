@@ -12,6 +12,7 @@ interface Item {
     id: number;
     title: string;
     price: number;
+    mrp?: number;
     description: string;
     images: string[];
     size?: string;
@@ -133,7 +134,21 @@ export default function ProductPage() {
                     <div className="space-y-4 mb-8">
                         <div>
                             <h1 className="font-serif text-3xl md:text-4xl text-gray-900 leading-tight mb-2">{item.title}</h1>
-                            <p className="text-2xl font-light">₹{item.price.toLocaleString()}</p>
+                            <div className="flex items-end gap-3">
+                                <p className="text-2xl font-light">
+                                    ₹{item.price.toLocaleString('en-IN')}
+                                </p>
+                                {item.mrp && item.mrp > item.price && (
+                                    <>
+                                        <p className="text-lg text-gray-400 line-through mb-1">
+                                            ₹{item.mrp.toLocaleString('en-IN')}
+                                        </p>
+                                        <span className="mb-1 text-green-600 text-sm font-bold uppercase tracking-widest bg-green-50 px-2 py-0.5 rounded">
+                                            {Math.round(((item.mrp - item.price) / item.mrp) * 100)}% OFF
+                                        </span>
+                                    </>
+                                )}
+                            </div>
                         </div>
 
                         <div className="w-12 h-[1px] bg-black/10"></div>

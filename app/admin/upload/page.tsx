@@ -14,7 +14,9 @@ export default function AdminUploadPage() {
 
     // Form State
     const [title, setTitle] = useState("");
+
     const [price, setPrice] = useState("");
+    const [mrp, setMrp] = useState("");
     const [description, setDescription] = useState("");
     const [images, setImages] = useState<File[]>([]);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -22,7 +24,7 @@ export default function AdminUploadPage() {
     const [color, setColor] = useState("");
 
     // Uploaded Item State for Success View
-    const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, description: string, id: number, size: string, color: string } | null>(null);
+    const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, mrp: string, description: string, id: number, size: string, color: string } | null>(null);
 
     const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "NA"];
     const COLORS = [
@@ -109,7 +111,9 @@ export default function AdminUploadPage() {
                 .from('items')
                 .insert([{
                     title,
+                    title,
                     price: parseFloat(price),
+                    mrp: parseFloat(mrp),
                     description,
 
                     images: uploadedImageUrls,
@@ -126,6 +130,7 @@ export default function AdminUploadPage() {
                 setUploadedItem({
                     title,
                     price,
+                    mrp,
                     description,
 
                     id: data.id,
@@ -137,6 +142,7 @@ export default function AdminUploadPage() {
             // Reset Form (Wait for user to dismiss success screen to fully reset logic if needed, but here we just clear state)
             setTitle("");
             setPrice("");
+            setMrp("");
             setDescription("");
             setImages([]);
 
@@ -158,9 +164,11 @@ export default function AdminUploadPage() {
 
     const copyForWhatsApp = () => {
         if (!uploadedItem) return;
-        const link = `https://vastra-mandir.vercel.app/product/${uploadedItem.id}`;
 
-        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Size: ${uploadedItem.size}* | *Color: ${uploadedItem.color}*\n*Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
+
+
+
+        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Size: ${uploadedItem.size}* | *Color: ${uploadedItem.color}*\n*MRP: ~₹${uploadedItem.mrp}~* *Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
 
         navigator.clipboard.writeText(text);
         alert("Copied to clipboard! Ready to paste in WhatsApp.");
@@ -266,6 +274,18 @@ export default function AdminUploadPage() {
                                 className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
                                 value={price}
                                 onChange={(e) => setPrice(e.target.value)}
+                            />
+                        </div>
+
+                        <div className="space-y-1">
+                            <label className="text-xs uppercase tracking-widest text-gray-500">MRP (₹)</label>
+                            <input
+                                required
+                                type="number"
+                                placeholder="0.00"
+                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
+                                value={mrp}
+                                onChange={(e) => setMrp(e.target.value)}
                             />
                         </div>
 

@@ -8,6 +8,7 @@ interface Product {
     id: number;
     title: string;
     price: number;
+    mrp?: number;
     description: string;
     images: string[];
     is_sold_out?: boolean;
@@ -61,9 +62,24 @@ export default function ProductCard({ product }: ProductCardProps) {
                     <h3 className="font-serif text-sm md:text-lg text-gray-900 group-hover:text-gray-600 transition-colors truncate px-1">
                         {product.title}
                     </h3>
-                    <p className="text-[10px] md:text-xs font-serif italic text-gray-500">
-                        {product.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
-                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                        {/* MRP Logic */}
+                        {product.mrp && product.mrp > product.price && (
+                            <p className="text-[10px] md:text-xs font-serif line-through text-gray-400">
+                                {product.mrp.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
+                            </p>
+                        )}
+                        <p className="text-[10px] md:text-xs font-serif italic text-gray-500">
+                            {product.price.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
+                        </p>
+                    </div>
+
+                    {/* Show Discount Badge if MRP is present */}
+                    {product.mrp && product.mrp > product.price && (
+                        <span className="text-[9px] text-green-600 font-bold uppercase tracking-widest">
+                            {Math.round(((product.mrp - product.price) / product.mrp) * 100)}% OFF
+                        </span>
+                    )}
 
                     {/* Mobile Button - Visible but subtle */}
                     {/* Mobile Button - Visible but subtle */}
