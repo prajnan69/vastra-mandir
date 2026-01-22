@@ -14,6 +14,8 @@ interface Item {
     price: number;
     description: string;
     images: string[];
+    size?: string;
+    color?: string;
 }
 
 export default function ProductPage() {
@@ -139,6 +141,25 @@ export default function ProductPage() {
                         <p className="text-gray-600 leading-relaxed font-light whitespace-pre-line">
                             {item.description}
                         </p>
+
+                        {(item.size || item.color) && (
+                            <div className="flex gap-4 pt-2">
+                                {item.size && item.size !== 'NA' && (
+                                    <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-500 block">Size</span>
+                                        <span className="font-serif text-lg">{item.size}</span>
+                                    </div>
+                                )}
+                                {item.color && (
+                                    <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-500 block">Color</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-serif text-lg">{item.color}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-3 sticky bottom-4 md:static">

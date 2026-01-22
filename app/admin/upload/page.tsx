@@ -18,9 +18,33 @@ export default function AdminUploadPage() {
     const [description, setDescription] = useState("");
     const [images, setImages] = useState<File[]>([]);
     const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [size, setSize] = useState("NA");
+    const [color, setColor] = useState("");
 
     // Uploaded Item State for Success View
-    const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, description: string, id: number } | null>(null);
+    const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, description: string, id: number, size: string, color: string } | null>(null);
+
+    const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "NA"];
+    const COLORS = [
+        { name: "Red", hex: "#EF4444" },
+        { name: "Blue", hex: "#3B82F6" },
+        { name: "Green", hex: "#22C55E" },
+        { name: "Yellow", hex: "#EAB308" },
+        { name: "Black", hex: "#000000" },
+        { name: "White", hex: "#FFFFFF" },
+        { name: "Pink", hex: "#EC4899" },
+        { name: "Purple", hex: "#A855F7" },
+        { name: "Orange", hex: "#F97316" },
+        { name: "Brown", hex: "#78350F" },
+        { name: "Grey", hex: "#6B7280" },
+        { name: "Gold", hex: "#FFD700" },
+        { name: "Silver", hex: "#C0C0C0" },
+        { name: "Beige", hex: "#F5F5DC" },
+        { name: "Maroon", hex: "#800000" },
+        { name: "Navy", hex: "#000080" },
+        { name: "Teal", hex: "#008080" },
+        { name: "Olive", hex: "#808000" },
+    ];
 
     const handlePinSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -87,7 +111,10 @@ export default function AdminUploadPage() {
                     title,
                     price: parseFloat(price),
                     description,
-                    images: uploadedImageUrls
+
+                    images: uploadedImageUrls,
+                    size,
+                    color
                 }])
                 .select()
                 .single();
@@ -100,7 +127,10 @@ export default function AdminUploadPage() {
                     title,
                     price,
                     description,
-                    id: data.id
+
+                    id: data.id,
+                    size,
+                    color,
                 });
             }
 
@@ -109,7 +139,10 @@ export default function AdminUploadPage() {
             setPrice("");
             setDescription("");
             setImages([]);
+
             setImageUrls([]);
+            setSize("NA");
+            setColor("");
 
         } catch (error: unknown) {
             console.error("Upload error:", error);
@@ -126,7 +159,8 @@ export default function AdminUploadPage() {
     const copyForWhatsApp = () => {
         if (!uploadedItem) return;
         const link = `https://vastra-mandir.vercel.app/product/${uploadedItem.id}`;
-        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
+
+        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Size: ${uploadedItem.size}* | *Color: ${uploadedItem.color}*\n*Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
 
         navigator.clipboard.writeText(text);
         alert("Copied to clipboard! Ready to paste in WhatsApp.");
@@ -243,6 +277,43 @@ export default function AdminUploadPage() {
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
                             />
+                        </div>
+                    </div>
+
+                    {/* Size and Color */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                            <label className="text-xs uppercase tracking-widest text-gray-500">Size</label>
+                            <div className="relative">
+                                <select
+                                    value={size}
+                                    onChange={(e) => setSize(e.target.value)}
+                                    className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl bg-transparent appearance-none"
+                                >
+                                    {SIZES.map((s) => (
+                                        <option key={s} value={s}>{s}</option>
+                                    ))}
+                                </select>
+                                <div className="absolute right-0 top-3 pointer-events-none">
+                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <label className="text-xs uppercase tracking-widest text-gray-500 block">Color: <span className="text-black font-bold">{color}</span></label>
+                            <div className="flex flex-wrap gap-3">
+                                {COLORS.map((c) => (
+                                    <button
+                                        key={c.name}
+                                        type="button"
+                                        onClick={() => setColor(c.name)}
+                                        className={`w-8 h-8 rounded-full border shadow-sm transition-all ${color === c.name ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-110'}`}
+                                        style={{ backgroundColor: c.hex }}
+                                        title={c.name}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     </div>
 
