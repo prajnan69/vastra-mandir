@@ -111,7 +111,6 @@ export default function AdminUploadPage() {
                 .from('items')
                 .insert([{
                     title,
-                    title,
                     price: parseFloat(price),
                     mrp: parseFloat(mrp),
                     description,
@@ -167,6 +166,8 @@ export default function AdminUploadPage() {
 
 
 
+
+        const link = `https://vastra-mandir.vercel.app/product/${uploadedItem.id}`;
 
         const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Size: ${uploadedItem.size}* | *Color: ${uploadedItem.color}*\n*MRP: ~₹${uploadedItem.mrp}~* *Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
 
