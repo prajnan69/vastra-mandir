@@ -4,50 +4,43 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { Upload, X, Loader2, Plus, Image as ImageIcon } from "lucide-react";
+import { Upload, X, Loader2, Plus, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
+
+interface Variant {
+    id: string; // temp id for UI
+    color: string;
+    stock: { [size: string]: number }; // New: Map size -> quantity
+    imageFiles: File[];
+    imageUrls: string[]; // previews
+}
 
 export default function AdminUploadPage() {
     const [pin, setPin] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    // Form State
+    // Basic Info
     const [title, setTitle] = useState("");
-
     const [price, setPrice] = useState("");
     const [mrp, setMrp] = useState("");
     const [description, setDescription] = useState("");
-    const [images, setImages] = useState<File[]>([]);
-    const [imageUrls, setImageUrls] = useState<string[]>([]);
-    const [size, setSize] = useState("NA");
-    const [color, setColor] = useState("");
 
-    // Uploaded Item State for Success View
-    const [uploadedItem, setUploadedItem] = useState<{ title: string, price: string, mrp: string, description: string, id: number, size: string, color: string } | null>(null);
+    // Variants State
+    const [variants, setVariants] = useState<Variant[]>([]);
 
-    const SIZES = ["XS", "S", "M", "L", "XL", "XXL", "NA"];
-    const COLORS = [
-        { name: "Red", hex: "#EF4444" },
-        { name: "Blue", hex: "#3B82F6" },
-        { name: "Green", hex: "#22C55E" },
-        { name: "Yellow", hex: "#EAB308" },
-        { name: "Black", hex: "#000000" },
-        { name: "White", hex: "#FFFFFF" },
-        { name: "Pink", hex: "#EC4899" },
-        { name: "Purple", hex: "#A855F7" },
-        { name: "Orange", hex: "#F97316" },
-        { name: "Brown", hex: "#78350F" },
-        { name: "Grey", hex: "#6B7280" },
-        { name: "Gold", hex: "#FFD700" },
-        { name: "Silver", hex: "#C0C0C0" },
-        { name: "Beige", hex: "#F5F5DC" },
-        { name: "Maroon", hex: "#800000" },
-        { name: "Navy", hex: "#000080" },
-        { name: "Teal", hex: "#008080" },
-        { name: "Olive", hex: "#808000" },
-    ];
+    // Quick Add Variant State
+    const [newVariantColor, setNewVariantColor] = useState("");
+    const [newVariantStock, setNewVariantStock] = useState<{ [size: string]: number }>({});
+    const [newVariantFiles, setNewVariantFiles] = useState<File[]>([]);
+    const [newVariantPreviews, setNewVariantPreviews] = useState<string[]>([]);
 
+    // Success State
+    const [uploadedItem, setUploadedItem] = useState<{ id: number; title: string; price?: number; mrp?: number; description?: string; color?: string; variants?: Variant[] } | null>(null);
+
+    const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Free Size"];
+
+    // --- Auth ---
     const handlePinSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (pin === "6090") {
@@ -57,105 +50,133 @@ export default function AdminUploadPage() {
         }
     };
 
-    const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // --- Variant Logic ---
+    const handleVariantImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
-            const newImages = Array.from(e.target.files);
-            if (images.length + newImages.length > 5) {
-                alert("Maximum 5 images allowed");
-                return;
-            }
-            setImages([...images, ...newImages]);
+            const files = Array.from(e.target.files);
+            setNewVariantFiles(prev => [...prev, ...files]);
 
-            // Create preview URLs
-            const newUrls = newImages.map(file => URL.createObjectURL(file));
-            setImageUrls([...imageUrls, ...newUrls]);
+            const urls = files.map(f => URL.createObjectURL(f));
+            setNewVariantPreviews(prev => [...prev, ...urls]);
         }
     };
 
-    const removeImage = (index: number) => {
-        const newImages = [...images];
-        newImages.splice(index, 1);
-        setImages(newImages);
-
-        const newUrls = [...imageUrls];
-        URL.revokeObjectURL(newUrls[index]); // Cleanup
-        newUrls.splice(index, 1);
-        setImageUrls(newUrls);
+    const removeVariantPreview = (index: number) => {
+        setNewVariantFiles(prev => prev.filter((_, i) => i !== index));
+        URL.revokeObjectURL(newVariantPreviews[index]);
+        setNewVariantPreviews(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleStockChange = (size: string, qtyStr: string) => {
+        const qty = parseInt(qtyStr) || 0;
+        setNewVariantStock(prev => {
+            if (qty > 0) {
+                return { ...prev, [size]: qty };
+            } else {
+                const newState = { ...prev };
+                delete newState[size];
+                return newState;
+            }
+        });
+    };
+
+    const addVariant = () => {
+        if (!newVariantColor) return alert("Please enter a color name");
+        if (newVariantFiles.length === 0) return alert("Please add at least one image for this color");
+        if (Object.keys(newVariantStock).length === 0) return alert("Please add stock for at least one size");
+
+        const variant: Variant = {
+            id: Date.now().toString(),
+            color: newVariantColor,
+            stock: newVariantStock,
+            imageFiles: newVariantFiles,
+            imageUrls: newVariantPreviews
+        };
+
+        setVariants([...variants, variant]);
+
+        // Reset inputs
+        setNewVariantColor("");
+        setNewVariantStock({});
+        setNewVariantFiles([]);
+        setNewVariantPreviews([]);
+    };
+
+    const removeVariant = (id: string) => {
+        setVariants(prev => prev.filter(v => v.id !== id));
+    };
+
+    // --- Submit ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (variants.length === 0) return alert("Please add at least one variant");
         setLoading(true);
 
         try {
-            const uploadedImageUrls: string[] = [];
+            const allUploadedImageUrls: string[] = []; // Collect all for the 'images' column
+            const finalVariants = [];
 
-            // 1. Upload Images to Supabase Storage
-            for (const image of images) {
-                const fileName = `${Date.now()}-${image.name}`;
-                const { data, error } = await supabase.storage
-                    .from('products')
-                    .upload(fileName, image);
+            // Process each variant
+            for (const variant of variants) {
+                const variantImageUrls: string[] = [];
 
-                if (error) throw error;
+                // Upload images for this variant
+                for (const file of variant.imageFiles) {
+                    const fileName = `${Date.now()}-${variant.color}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                    const { error: uploadError } = await supabase.storage
+                        .from('products')
+                        .upload(fileName, file);
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('products')
-                    .getPublicUrl(fileName);
+                    if (uploadError) throw uploadError;
 
-                uploadedImageUrls.push(publicUrl);
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('products')
+                        .getPublicUrl(fileName);
+
+                    variantImageUrls.push(publicUrl);
+                    allUploadedImageUrls.push(publicUrl);
+                }
+
+                // IMPORTANT: We now store object `stock` instead of array `sizes`
+                finalVariants.push({
+                    color: variant.color,
+                    stock: variant.stock, // { "S": 5, "M": 2 }
+                    images: variantImageUrls
+                });
             }
 
-            // 2. Insert Item into Database
-            const { data, error: insertError } = await supabase
+            const sizesList = Array.from(new Set(variants.flatMap(v => Object.keys(v.stock)))).join(", ");
+            const colorsList = variants.map(v => v.color).join(", ");
+
+            // Insert into DB
+            const { data, error } = await supabase
                 .from('items')
                 .insert([{
                     title,
                     price: parseFloat(price),
-                    mrp: parseFloat(mrp),
+                    mrp: mrp ? parseFloat(mrp) : null,
                     description,
-
-                    images: uploadedImageUrls,
-                    size,
-                    color
+                    images: allUploadedImageUrls,
+                    variants: finalVariants,
+                    size: sizesList, // Legacy
+                    color: colorsList // Legacy
                 }])
                 .select()
                 .single();
 
-            if (insertError) throw insertError;
-
-            // 3. Show Success & Copy Option
+            if (error) throw error;
             if (data) {
-                setUploadedItem({
-                    title,
-                    price,
-                    mrp,
-                    description,
-
-                    id: data.id,
-                    size,
-                    color,
-                });
+                setUploadedItem({ ...data, variants: finalVariants });
             }
 
-            // Reset Form (Wait for user to dismiss success screen to fully reset logic if needed, but here we just clear state)
-            setTitle("");
-            setPrice("");
-            setMrp("");
-            setDescription("");
-            setImages([]);
-
-            setImageUrls([]);
-            setSize("NA");
-            setColor("");
-
-        } catch (error: unknown) {
-            console.error("Upload error:", error);
-            if (error instanceof Error) {
-                alert(`Error: ${error.message}`);
-            } else {
-                alert("An unknown error occurred during upload.");
-            }
+            // Note: We do NOT clear form here anymore, so we can use the data for the copy function if needed, 
+            // or we use the data we just set in uploadedItem. 
+            // Let's clear the INPUTS but keep the variants in `uploadedItem` for the success screen.
+            setTitle(""); setPrice(""); setMrp(""); setDescription("");
+            setVariants([]);
+        } catch (error: any) {
+            console.error(error);
+            alert("Error uploading: " + error.message);
         } finally {
             setLoading(false);
         }
@@ -164,244 +185,177 @@ export default function AdminUploadPage() {
     const copyForWhatsApp = () => {
         if (!uploadedItem) return;
 
-
-
-
         const link = `https://vastra-mandir.vercel.app/product/${uploadedItem.id}`;
 
-        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n*Size: ${uploadedItem.size}* | *Color: ${uploadedItem.color}*\n*MRP: ~₹${uploadedItem.mrp}~* *Price: ₹${uploadedItem.price}*\n\n🛒 Buy Here: ${link}`;
+        // Extract colors
+        let colorText = "";
+        if (variants.length > 0) {
+            const colors = variants.map(v => v.color).join(", ");
+            colorText = `*Available Colors: ${colors}*`;
+        } else if (uploadedItem.color) {
+            colorText = `*Color: ${uploadedItem.color}*`;
+        }
+
+        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n${colorText}\n*MRP: ~₹${mrp}~* *Price: ₹${price}*\n\n🛒 Buy Here: ${link}`;
 
         navigator.clipboard.writeText(text);
         alert("Copied to clipboard! Ready to paste in WhatsApp.");
     };
 
-    const resetUpload = () => {
-        setUploadedItem(null);
-    };
-
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] text-center p-4">
-                <div className="max-w-xs w-full space-y-8">
-                    <h1 className="font-serif text-2xl tracking-widest uppercase">Admin Access</h1>
-                    <form onSubmit={handlePinSubmit} className="space-y-6">
-                        <input
-                            type="password"
-                            placeholder="Enter PIN"
-                            className="w-full text-center px-4 py-3 bg-transparent border-b border-gray-300 focus:border-black outline-none tracking-[0.5em] text-xl font-light placeholder:tracking-normal placeholder:text-sm"
-                            value={pin}
-                            onChange={(e) => setPin(e.target.value)}
-                        />
-                        <button
-                            type="submit"
-                            className="w-full bg-black text-white py-3 text-xs uppercase tracking-widest hover:bg-gray-900 transition-all"
-                        >
-                            Enter Verification
-                        </button>
-                    </form>
-                </div>
+            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4">
+                <form onSubmit={handlePinSubmit} className="space-y-4 w-full max-w-xs text-center">
+                    <h1 className="font-serif text-xl uppercase tracking-widest">Admin</h1>
+                    <input
+                        type="password"
+                        value={pin} onChange={e => setPin(e.target.value)}
+                        className="w-full text-center border-b border-gray-300 py-2 focus:border-black outline-none tracking-widest"
+                        placeholder="PIN"
+                    />
+                </form>
             </div>
         );
     }
 
     if (uploadedItem) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-4">
-                <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-lg text-center space-y-6 animate-in zoom-in duration-300">
-                    <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto">
-                        <Loader2 size={0} className="hidden" /> {/* Dummy to keep import valid if unused */}
-                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                    </div>
-
-                    <div>
-                        <h2 className="font-serif text-2xl mb-2">Item Published!</h2>
-                        <p className="text-gray-500 text-sm">Your item is now live on the store.</p>
-                    </div>
-
-                    <div className="bg-gray-50 p-4 rounded-xl text-left text-sm space-y-2 border border-gray-100">
-                        <p className="font-bold">{uploadedItem.title}</p>
-                        <p className="text-gray-500 line-clamp-2">{uploadedItem.description}</p>
-                        <p className="text-blue-600 underline text-xs break-all">https://vastra-mandir.vercel.app/product/{uploadedItem.id}</p>
-                    </div>
-
-                    <button
-                        onClick={copyForWhatsApp}
-                        className="w-full bg-green-600 text-white py-4 rounded-xl font-bold uppercase tracking-wide hover:bg-green-700 shadow-lg shadow-green-100 transition-all flex items-center justify-center gap-2"
-                    >
-                        Copy for WhatsApp
-                    </button>
-
-                    <button
-                        onClick={resetUpload}
-                        className="w-full text-gray-400 text-xs uppercase tracking-widest hover:text-black mt-4"
-                    >
-                        Upload Another Item
-                    </button>
+            <div className="min-h-screen flex flex-col items-center justify-center bg-white p-6 text-center space-y-6">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center">
+                    <Loader2 className="hidden" /> {/* Import keeper */}
+                    <Plus className="rotate-45" size={32} />
                 </div>
+                <h2 className="font-serif text-2xl">Published!</h2>
+                <p className="text-gray-500">{uploadedItem.title}</p>
+                <button onClick={copyForWhatsApp} className="bg-black text-white px-8 py-3 rounded-xl text-xs uppercase tracking-widest">
+                    Copy WhatsApp Message
+                </button>
+                <button onClick={() => setUploadedItem(null)} className="text-xs uppercase tracking-widest text-gray-400">
+                    Upload Another
+                </button>
             </div>
-        );
+        )
     }
 
     return (
-        <div className="min-h-screen bg-[#FAFAFA] p-6 md:p-12">
-            <div className="max-w-2xl mx-auto bg-white p-8 md:p-12 shadow-sm border border-gray-50">
-                <div className="mb-12 text-center">
-                    <h1 className="font-serif text-3xl mb-2">New Collection Item</h1>
-                    <p className="text-gray-400 text-xs uppercase tracking-widest">Add details to the catalog</p>
-                </div>
+        <div className="min-h-screen bg-[#FAFAFA] p-4 md:p-12 pb-32">
+            <div className="max-w-3xl mx-auto bg-white p-6 md:p-12 shadow-sm rounded-2xl">
+                <h1 className="font-serif text-3xl mb-8 text-center">New Collection</h1>
 
-                <form onSubmit={handleSubmit} className="space-y-12">
+                <form onSubmit={handleSubmit} className="space-y-8">
+                    {/* Basic Details */}
+                    <div className="space-y-6">
+                        <input className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl"
+                            placeholder="Product Title" value={title} onChange={e => setTitle(e.target.value)} required />
 
-                    {/* Basic Info */}
-                    <div className="space-y-8">
-                        <div className="space-y-1">
-                            <label className="text-xs uppercase tracking-widest text-gray-500">Product Title</label>
-                            <input
-                                required
-                                type="text"
-                                placeholder="e.g. Royal Silk Saree"
-                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
-                                value={title}
-                                onChange={(e) => setTitle(e.target.value)}
-                            />
+                        <div className="flex gap-4">
+                            <input className="w-1/2 py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-lg"
+                                type="number" placeholder="Price (₹)" value={price} onChange={e => setPrice(e.target.value)} required />
+                            <input className="w-1/2 py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-lg"
+                                type="number" placeholder="MRP (₹)" value={mrp} onChange={e => setMrp(e.target.value)} />
                         </div>
 
-                        <div className="space-y-1">
-                            <label className="text-xs uppercase tracking-widest text-gray-500">Price (₹)</label>
-                            <input
-                                required
-                                type="number"
-                                placeholder="0.00"
-                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
-                                value={price}
-                                onChange={(e) => setPrice(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-xs uppercase tracking-widest text-gray-500">MRP (₹)</label>
-                            <input
-                                required
-                                type="number"
-                                placeholder="0.00"
-                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl placeholder:font-sans placeholder:text-gray-300 transition-all"
-                                value={mrp}
-                                onChange={(e) => setMrp(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="space-y-1">
-                            <label className="text-xs uppercase tracking-widest text-gray-500">Description</label>
-                            <textarea
-                                placeholder="Describe the fabric, work, and details..."
-                                className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-light min-h-[100px] resize-none placeholder:text-gray-300 transition-all"
-                                value={description}
-                                onChange={(e) => setDescription(e.target.value)}
-                            />
-                        </div>
+                        <textarea className="w-full py-2 border-b border-gray-200 focus:border-black outline-none min-h-[80px]"
+                            placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
                     </div>
 
-                    {/* Size and Color */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {/* Variants Manager */}
+                    <div className="bg-gray-50 p-6 rounded-xl space-y-6 border border-gray-100">
+                        <h3 className="font-serif text-lg">Variants (Colors)</h3>
+
+                        {/* List Added Variants */}
                         <div className="space-y-2">
-                            <label className="text-xs uppercase tracking-widest text-gray-500">Size</label>
-                            <div className="relative">
-                                <select
-                                    value={size}
-                                    onChange={(e) => setSize(e.target.value)}
-                                    className="w-full py-2 border-b border-gray-200 focus:border-black outline-none font-serif text-xl bg-transparent appearance-none"
-                                >
-                                    {SIZES.map((s) => (
-                                        <option key={s} value={s}>{s}</option>
-                                    ))}
-                                </select>
-                                <div className="absolute right-0 top-3 pointer-events-none">
-                                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4">
-                            <label className="text-xs uppercase tracking-widest text-gray-500 block">Color: <span className="text-black font-bold">{color}</span></label>
-                            <div className="flex flex-wrap gap-3">
-                                {COLORS.map((c) => (
-                                    <button
-                                        key={c.name}
-                                        type="button"
-                                        onClick={() => setColor(c.name)}
-                                        className={`w-8 h-8 rounded-full border shadow-sm transition-all ${color === c.name ? 'ring-2 ring-offset-2 ring-black scale-110' : 'hover:scale-110'}`}
-                                        style={{ backgroundColor: c.hex }}
-                                        title={c.name}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Image Upload */}
-                    <div className="space-y-4">
-                        <label className="text-xs uppercase tracking-widest text-gray-500 block">Product Imagery</label>
-
-                        <div className="grid grid-cols-3 gap-4">
-                            {imageUrls.map((url, index) => (
-                                <div key={index} className="relative aspect-[3/4] group">
-                                    <Image
-                                        src={url}
-                                        alt="Preview"
-                                        fill
-                                        className="object-cover"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeImage(index)}
-                                        className="absolute top-2 right-2 p-1 bg-white/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50 hover:text-red-500"
-                                    >
-                                        <X size={14} />
+                            {variants.map((v) => (
+                                <div key={v.id} className="flex items-center gap-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                    <div className="w-10 h-10 relative bg-gray-100 rounded overflow-hidden">
+                                        <Image src={v.imageUrls[0]} alt={v.color} fill className="object-cover" />
+                                    </div>
+                                    <div className="flex-1">
+                                        <p className="font-bold text-sm">{v.color}</p>
+                                        <div className="flex flex-wrap gap-2 mt-1">
+                                            {Object.entries(v.stock).map(([size, qty]) => (
+                                                <span key={size} className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-600 border border-gray-200">
+                                                    {size}: {qty}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <button type="button" onClick={() => removeVariant(v.id)} className="text-red-400 hover:text-red-600 p-2">
+                                        <Trash2 size={16} />
                                     </button>
                                 </div>
                             ))}
-
-                            {images.length < 5 && (
-                                <label className="aspect-[3/4] border border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-all group">
-                                    <div className="p-3 rounded-full bg-gray-50 group-hover:bg-white mb-2 transition-colors">
-                                        <Plus size={20} className="text-gray-400 group-hover:text-black" />
-                                    </div>
-                                    <span className="text-[10px] uppercase tracking-widest text-gray-400 group-hover:text-black">Add Image</span>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        multiple
-                                        className="hidden"
-                                        onChange={handleImageSelect}
-                                    />
-                                </label>
-                            )}
                         </div>
-                        <p className="text-[10px] text-gray-400 text-center">
-                            Upload up to 5 images. First image will be the cover.
-                        </p>
+
+                        {/* Add New Variant */}
+                        <div className="space-y-4 pt-4 border-t border-gray-200">
+                            <p className="text-xs uppercase tracking-widest text-gray-400">Add New Color Variant</p>
+
+                            <div className="flex gap-4 items-center">
+                                <input
+                                    className="flex-1 py-2 px-3 border border-gray-200 rounded focus:border-black outline-none text-sm"
+                                    placeholder="Color Name (e.g. Royal Blue)"
+                                    value={newVariantColor} onChange={e => setNewVariantColor(e.target.value)}
+                                />
+                            </div>
+
+                            {/* Sizes & Stock */}
+                            <div>
+                                <p className="text-[10px] uppercase text-gray-400 mb-2">Available Quantity per Size</p>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    {ALL_SIZES.map(s => (
+                                        <div key={s} className={`flex items-center border rounded-lg p-2 transition-all ${newVariantStock[s] ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
+                                            <label className="text-xs font-bold w-8">{s}</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                placeholder="Qty"
+                                                value={newVariantStock[s] || ""}
+                                                onChange={(e) => handleStockChange(s, e.target.value)}
+                                                className="w-full bg-transparent text-sm focus:outline-none text-right"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <p className="text-[10px] text-gray-400 mt-2">* Leave empty for 0 stock</p>
+                            </div>
+
+                            {/* Images */}
+                            <div>
+                                <p className="text-[10px] uppercase text-gray-400 mb-2">Images for this color</p>
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                    {newVariantPreviews.map((url, i) => (
+                                        <div key={i} className="relative w-16 h-20 flex-shrink-0 rounded overflow-hidden border">
+                                            <Image src={url} alt="p" fill className="object-cover" />
+                                            <button type="button" onClick={() => removeVariantPreview(i)} className="absolute top-0 right-0 bg-white/80 p-0.5 rounded-bl">
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                    <label className="w-16 h-20 flex-shrink-0 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-colors">
+                                        <Plus size={16} className="text-gray-400" />
+                                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleVariantImageSelect} />
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button
+                                type="button"
+                                onClick={addVariant}
+                                className="w-full py-3 bg-gray-900 text-white rounded-lg text-xs uppercase tracking-widest hover:bg-black transition-all"
+                            >
+                                Add Variant
+                            </button>
+                        </div>
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-black text-white py-4 text-xs uppercase tracking-widest hover:bg-gray-900 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full bg-green-600 text-white py-4 text-sm font-bold uppercase tracking-widest hover:bg-green-700 transition-all shadow-xl shadow-green-100 rounded-xl"
                     >
-                        {loading ? (
-                            <>
-                                <Loader2 size={16} className="animate-spin" />
-                                PUBLISHING...
-                            </>
-                        ) : (
-                            "PUBLISH TO CATALOG"
-                        )}
+                        {loading ? "Uploading..." : "Publish Item"}
                     </button>
-
-                    <div className="text-center">
-                        <a href="/" className="text-[10px] uppercase tracking-widest text-gray-400 hover:text-black border-b border-transparent hover:border-black transition-all pb-0.5">
-                            Back to Store
-                        </a>
-                    </div>
                 </form>
             </div>
         </div>

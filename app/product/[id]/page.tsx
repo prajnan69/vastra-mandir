@@ -3,10 +3,18 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Share2, MessageCircle } from "lucide-react";
+import { ArrowLeft, Share2, ShoppingBag, Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import CheckoutModal from "@/components/CheckoutModal";
+import { useCart } from "@/context/CartContext";
+
+interface Variant {
+    color: string;
+    sizes?: string[]; // Legacy support
+    stock?: { [size: string]: number }; // New quantity map
+    images: string[];
+}
 
 interface Item {
     id: number;
@@ -15,16 +23,25 @@ interface Item {
     mrp?: number;
     description: string;
     images: string[];
-    size?: string;
-    color?: string;
+    variants?: Variant[];
+    size?: string; // Legacy
+    color?: string; // Legacy
 }
 
 export default function ProductPage() {
     const params = useParams();
+    const { addToCart, setCartOpen } = useCart();
     const [item, setItem] = useState<Item | null>(null);
     const [loading, setLoading] = useState(true);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+
+    // Selection State
+    const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null);
+    const [selectedSize, setSelectedSize] = useState<string>("");
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+    // Derived State
+    const currentImages = selectedVariant ? selectedVariant.images : (item?.images || []);
 
     const PRODUCT_URL_BASE = "https://vastra-mandir.vercel.app/product/";
 
@@ -33,6 +50,33 @@ export default function ProductPage() {
             fetchItem(params.id as string);
         }
     }, [params]);
+
+    // Auto-select first variant on load
+    useEffect(() => {
+        if (item?.variants && item.variants.length > 0 && !selectedVariant) {
+            setSelectedVariant(item.variants[0]);
+        }
+    }, [item]);
+
+    // Reset size when variant changes
+    useEffect(() => {
+        if (selectedVariant) {
+            // Logic to check if current selected size is valid/in-stock for new variant
+            // If we have stock data, check if qty > 0. If legacy 'sizes' array, check inclusion.
+
+            let isValid = false;
+            if (selectedVariant.stock) {
+                isValid = (selectedVariant.stock[selectedSize] || 0) > 0;
+            } else if (selectedVariant.sizes) {
+                isValid = selectedVariant.sizes.includes(selectedSize);
+            }
+
+            if (!isValid) {
+                setSelectedSize("");
+            }
+            setActiveImageIndex(0);
+        }
+    }, [selectedVariant]);
 
     const fetchItem = async (id: string) => {
         try {
@@ -51,6 +95,33 @@ export default function ProductPage() {
         }
     };
 
+    const handleAddToCart = () => {
+        if (!item) return;
+
+        // Validation for new variant system
+        if (item.variants && item.variants.length > 0) {
+            if (!selectedVariant) return alert("Please select a color");
+            if (!selectedSize) return alert("Please select a size");
+        }
+
+        const sizeToUse = selectedSize || item.size || "NA";
+        const colorToUse = selectedVariant?.color || item.color || "NA";
+        const imageToUse = currentImages[0] || "/placeholder.jpg";
+
+        addToCart({
+            id: `${item.id}-${colorToUse}-${sizeToUse}`, // Unique for this combination
+            itemId: item.id,
+            title: item.title,
+            price: item.price,
+            image: imageToUse,
+            color: colorToUse,
+            size: sizeToUse,
+            quantity: 1
+        });
+
+        setCartOpen(true);
+    };
+
     const handleShare = () => {
         const url = `${PRODUCT_URL_BASE}${item?.id}`;
         const text = `Check out this ${item?.title} on Vastra Mandir!\n\nPrice: ₹${item?.price}\n\n${url}`;
@@ -64,6 +135,25 @@ export default function ProductPage() {
             navigator.clipboard.writeText(text);
             alert("Link copied to clipboard!");
         }
+    };
+
+    // Helper to get available sizes for current variant
+    const getAvailableSizes = () => {
+        if (!selectedVariant) return [];
+
+        // New System: Stock Map
+        if (selectedVariant.stock) {
+            // Return all sizes that exist in the map (even with 0 stock, so we can show them disabled)
+            return Object.keys(selectedVariant.stock);
+        }
+
+        // Legacy System: Sizes Array
+        return selectedVariant.sizes || [];
+    };
+
+    const getStockForSize = (size: string) => {
+        if (!selectedVariant?.stock) return 999; // Assume in stock if legacy
+        return selectedVariant.stock[size] || 0;
     };
 
     if (loading) {
@@ -89,6 +179,8 @@ export default function ProductPage() {
         );
     }
 
+    const hasVariants = item.variants && item.variants.length > 0;
+
     return (
         <div className="min-h-screen bg-white">
             {/* Header */}
@@ -106,17 +198,19 @@ export default function ProductPage() {
                 {/* Images */}
                 <div className="space-y-4">
                     <div className="relative aspect-[3/4] bg-gray-50 rounded-2xl overflow-hidden shadow-sm">
-                        <Image
-                            src={item.images[activeImageIndex]}
-                            alt={item.title}
-                            fill
-                            className="object-cover"
-                            priority
-                        />
+                        {currentImages[activeImageIndex] && (
+                            <Image
+                                src={currentImages[activeImageIndex]}
+                                alt={item.title}
+                                fill
+                                className="object-cover"
+                                priority
+                            />
+                        )}
                     </div>
-                    {item.images.length > 1 && (
+                    {currentImages.length > 1 && (
                         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            {item.images.map((img, idx) => (
+                            {currentImages.map((img, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => setActiveImageIndex(idx)}
@@ -131,7 +225,7 @@ export default function ProductPage() {
 
                 {/* Details */}
                 <div className="flex flex-col justify-center">
-                    <div className="space-y-4 mb-8">
+                    <div className="space-y-6 mb-8">
                         <div>
                             <h1 className="font-serif text-3xl md:text-4xl text-gray-900 leading-tight mb-2">{item.title}</h1>
                             <div className="flex items-end gap-3">
@@ -153,11 +247,70 @@ export default function ProductPage() {
 
                         <div className="w-12 h-[1px] bg-black/10"></div>
 
-                        <p className="text-gray-600 leading-relaxed font-light whitespace-pre-line">
-                            {item.description}
-                        </p>
+                        {/* Variants Logic (New) */}
+                        {hasVariants && (
+                            <div className="space-y-6">
+                                {/* Colors */}
+                                <div className="space-y-2">
+                                    <span className="text-xs uppercase tracking-widest text-gray-500">
+                                        Color: <span className="text-black font-bold">{selectedVariant?.color}</span>
+                                    </span>
+                                    <div className="flex flex-wrap gap-3">
+                                        {item.variants!.map((variant) => (
+                                            <button
+                                                key={variant.color}
+                                                onClick={() => setSelectedVariant(variant)}
+                                                className={`relative w-12 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedVariant?.color === variant.color ? 'border-black ring-1 ring-black ring-offset-2' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                                            >
+                                                <Image src={variant.images[0]} alt={variant.color} fill className="object-cover" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                        {(item.size || item.color) && (
+                                {/* Sizes */}
+                                <div className="space-y-2">
+                                    <span className="text-xs uppercase tracking-widest text-gray-500">
+                                        Size: <span className="text-black font-bold">{selectedSize}</span>
+                                    </span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {getAvailableSizes().map((s) => {
+                                            const stock = getStockForSize(s);
+                                            const isOutOfStock = stock <= 0;
+
+                                            return (
+                                                <button
+                                                    key={s}
+                                                    onClick={() => !isOutOfStock && setSelectedSize(s)}
+                                                    disabled={isOutOfStock}
+                                                    className={`min-w-[40px] px-3 py-2 text-sm border rounded-lg transition-all relative ${selectedSize === s
+                                                            ? 'bg-black text-white border-black'
+                                                            : isOutOfStock
+                                                                ? 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed decoration-slice'
+                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-black'
+                                                        }`}
+                                                >
+                                                    {s}
+                                                    {isOutOfStock && (
+                                                        <div className="absolute inset-0 flex items-center justify-center">
+                                                            <div className="w-full h-[1px] bg-gray-400 rotate-45 transform"></div>
+                                                        </div>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    {selectedVariant?.stock && selectedSize && getStockForSize(selectedSize) < 5 && getStockForSize(selectedSize) > 0 && (
+                                        <p className="text-[10px] text-red-500 font-bold uppercase tracking-widest animate-pulse">
+                                            Only {getStockForSize(selectedSize)} left!
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Legacy Display (Old Items) */}
+                        {!hasVariants && (item.size || item.color) && (
                             <div className="flex gap-4 pt-2">
                                 {item.size && item.size !== 'NA' && (
                                     <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-100">
@@ -175,12 +328,26 @@ export default function ProductPage() {
                                 )}
                             </div>
                         )}
+
+                        <p className="text-gray-600 leading-relaxed font-light whitespace-pre-line pt-2 border-t border-gray-100">
+                            {item.description}
+                        </p>
                     </div>
 
-                    <div className="space-y-3 sticky bottom-4 md:static">
+                    <div className="grid grid-cols-2 gap-3 sticky bottom-4 md:static">
                         <button
-                            onClick={() => setIsCheckoutOpen(true)}
-                            className="w-full bg-black text-white py-4 rounded-full text-sm uppercase tracking-widest hover:bg-gray-900 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
+                            onClick={handleAddToCart}
+                            className="w-full bg-white border border-black text-black py-4 rounded-full text-xs uppercase tracking-widest hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
+                        >
+                            <ShoppingBag size={16} />
+                            Add to Bag
+                        </button>
+                        <button
+                            onClick={() => {
+                                handleAddToCart(); // Add to cart first
+                                setIsCheckoutOpen(true); // Then open checkout
+                            }}
+                            className="w-full bg-black text-white py-4 rounded-full text-xs uppercase tracking-widest hover:bg-gray-900 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                         >
                             Buy Now
                         </button>
@@ -193,6 +360,7 @@ export default function ProductPage() {
                 isOpen={isCheckoutOpen}
                 onClose={() => setIsCheckoutOpen(false)}
                 product={item}
+                isCartCheckout={true} // Since we added to cart, we checkout as cart
             />
         </div>
     );

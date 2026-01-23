@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useCart } from "@/context/CartContext";
 import { X, CheckCircle, Smartphone, Banknote, Loader2, ArrowRight } from "lucide-react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
@@ -13,9 +14,11 @@ interface CheckoutModalProps {
         title: string;
         price: number;
     };
+    isCartCheckout?: boolean;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout = false }: CheckoutModalProps) {
+    const { cart, clearCart } = useCart();
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -72,14 +75,81 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         setStep(2);
     };
 
+    // --- Inventory Management Logic ---
+    const updateInventory = async (): Promise<boolean> => {
+        const itemsToProcess = isCartCheckout ? cart : [];
+        // Note: For single "Buy Now" flow (non-cart), we don't have enough info here (size/color) passed easily 
+        // unless we refactor. But our "Buy Now" button conveniently Adds to Cart first now (in ProductPage).
+        // So we can rely on `cart` being populated even for "Buy Now" if the flow is correct.
+        // However, if `isCartCheckout` is false, it means we are in a legacy flow or direct buy.
+        // For robustness, let's assume `isCartCheckout` is ALWAYS true for the new system.
+
+        if (itemsToProcess.length === 0) return true; // Nothing to update
+
+        // Using a loop for simplicity, though a stored procedure would be safer for atomic transactions
+        for (const item of itemsToProcess) {
+            if (!item.color || !item.size || item.size === 'NA') continue; // Skip legacy/simple items
+
+            // 1. Fetch current item data to get latest variants
+            const { data: currentItem, error: fetchError } = await supabase
+                .from('items')
+                .select('variants')
+                .eq('id', item.itemId)
+                .single();
+
+            if (fetchError || !currentItem || !currentItem.variants) {
+                console.error("Inventory error: Could not fetch item", item.title);
+                continue;
+            }
+
+            // 2. Find and update the specific variant stock
+            const variants = currentItem.variants;
+            let updated = false;
+
+            const newVariants = variants.map((v: any) => {
+                if (v.color === item.color && v.stock && v.stock[item.size] !== undefined) {
+                    const currentQty = v.stock[item.size];
+                    if (currentQty > 0) {
+                        updated = true;
+                        // Decrement
+                        return {
+                            ...v,
+                            stock: {
+                                ...v.stock,
+                                [item.size]: Math.max(0, currentQty - item.quantity)
+                            }
+                        };
+                    }
+                }
+                return v;
+            });
+
+            if (!updated) {
+                // Stock problem! 
+                // We could return false here to abort the whole order, or just log it and proceed (overselling risk).
+                // For now, let's try to update what we can.
+            }
+
+            // 3. Write back to DB
+            const { error: updateError } = await supabase
+                .from('items')
+                .update({ variants: newVariants })
+                .eq('id', item.itemId);
+
+            if (updateError) console.error("Failed to update inventory for", item.title, updateError);
+        }
+
+        return true;
+    };
+
     // ACTION: Handle 'Tap to Pay' on Mobile
     const handlePayOnApp = async () => {
-        // 1. Logic: If user clicks this, we assume they are paying. 
-        // We save the order immediately as 'paid_online' (optimistic) then redirect.
-        // WE DO NOT SHOW SUCCESS SCREEN YET. User must manually verify or "I Have Paid" later.
-
         setLoading(true);
         try {
+            // 1. Inventory Check & Update
+            await updateInventory();
+
+            // 2. Create Order
             const { error } = await supabase
                 .from('orders')
                 .insert([{
@@ -89,12 +159,15 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                     customer_pincode: formData.pincode,
                     item_title: product.title,
                     item_price: product.price,
-                    status: 'paid_online' // Optimistic for "App Payment" flow
+                    status: 'paid_online', // Optimistic for "App Payment" flow
+                    order_items: isCartCheckout ? cart : [{ title: product.title, price: product.price }]
                 }]);
 
             if (error) console.error("Error saving order:", error);
 
-            // 2. Open UPI Intent ONLY (No Confetti yet)
+            if (isCartCheckout) clearCart();
+
+            // 3. Open UPI Intent
             window.location.href = upiLink;
 
         } catch (err) {
@@ -108,7 +181,10 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
         setLoading(true);
 
         try {
-            // 1. Save to Database
+            // 1. Inventory Check & Update
+            await updateInventory();
+
+            // 2. Save to Database
             const { error } = await supabase
                 .from('orders')
                 .insert([{
@@ -118,14 +194,17 @@ export default function CheckoutModal({ isOpen, onClose, product }: CheckoutModa
                     customer_pincode: formData.pincode,
                     item_title: product.title,
                     item_price: product.price,
-                    status: mode === 'online' ? 'paid_online' : 'cod_pending'
+                    status: mode === 'online' ? 'paid_online' : 'cod_pending',
+                    order_items: isCartCheckout ? cart : [{ title: product.title, price: product.price }]
                 }]);
 
             if (error) {
                 console.error("Error saving order:", error);
             }
 
-            // 2. Trigger Success & Confetti
+            if (isCartCheckout) clearCart();
+
+            // 3. Trigger Success & Confetti
             setStep(3);
             triggerConfetti();
 

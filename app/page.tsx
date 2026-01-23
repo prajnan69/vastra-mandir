@@ -5,6 +5,8 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import ProductCard from "@/components/ProductCard";
+import { useCart } from "@/context/CartContext";
+import { ShoppingBag } from "lucide-react";
 
 interface Item {
   id: number;
@@ -19,6 +21,7 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+  const { cart, setCartOpen } = useCart();
 
   useEffect(() => {
     fetchItems();
@@ -54,8 +57,23 @@ export default function Home() {
     <main className="min-h-screen">
       {/* Minimal Header */}
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 md:py-6 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-6 py-4 md:py-6 flex items-center justify-between">
+          {/* Invisible spacer for balance if needed, or just left aligned brand? Let's do Center Brand, Right Cart */}
+          <div className="w-10"></div>
+
           <h1 className="text-xl md:text-3xl font-serif tracking-widest uppercase text-black">Vastra Mandir</h1>
+
+          <button
+            onClick={() => setCartOpen(true)}
+            className="w-10 h-10 flex items-center justify-center relative hover:bg-gray-100 rounded-full transition-all"
+          >
+            <ShoppingBag size={20} />
+            {cart.length > 0 && (
+              <span className="absolute top-1 right-1 w-4 h-4 bg-black text-white text-[10px] font-bold flex items-center justify-center rounded-full">
+                {cart.length}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
