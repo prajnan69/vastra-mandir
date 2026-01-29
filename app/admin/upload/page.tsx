@@ -18,7 +18,21 @@ interface Variant {
 export default function AdminUploadPage() {
     const [pin, setPin] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        try {
+            const session = localStorage.getItem("admin_session");
+            if (session === "true") {
+                setIsAuthenticated(true);
+            }
+        } catch (e) {
+            console.error("Local storage access failed", e);
+        } finally {
+            setIsCheckingAuth(false);
+        }
+    }, []);
 
     // Basic Info
     const [title, setTitle] = useState("");
@@ -44,6 +58,11 @@ export default function AdminUploadPage() {
     const handlePinSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (pin === "6090") {
+            try {
+                localStorage.setItem("admin_session", "true");
+            } catch (e) {
+                console.error("Failed to save session", e);
+            }
             setIsAuthenticated(true);
         } else {
             alert("Incorrect PIN");
@@ -201,6 +220,14 @@ export default function AdminUploadPage() {
         navigator.clipboard.writeText(text);
         alert("Copied to clipboard! Ready to paste in WhatsApp.");
     };
+
+    if (isCheckingAuth) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+                <Loader2 className="animate-spin text-gray-400" size={32} />
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         return (
