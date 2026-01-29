@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Loader2, Eye, EyeOff, Share2, Edit2, Check, X } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff, Share2, Edit2, Check, X, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -97,6 +97,24 @@ export default function InventoryPage() {
             alert("Failed to update MRP");
         } finally {
             setSavingMrp(false);
+        }
+    };
+
+    const deleteItem = async (id: number) => {
+        if (!confirm("Are you sure you want to delete this item? This cannot be undone.")) return;
+
+        try {
+            const { error } = await supabase
+                .from('items')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            setItems(prev => prev.filter(item => item.id !== id));
+        } catch (error) {
+            console.error("Error deleting item:", error);
+            alert("Failed to delete item");
         }
     };
 
@@ -200,17 +218,27 @@ export default function InventoryPage() {
                                     )}
                                 </button>
 
-                                <button
-                                    onClick={() => {
-                                        const link = `https://vastra-mandir.vercel.app/product/${item.id}`;
-                                        const text = `*${item.title}*\n\n${item.mrp ? `*MRP: ~₹${item.mrp}~* ` : ''}*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: ${link}`;
-                                        navigator.clipboard.writeText(text);
-                                        alert("Link copied!");
-                                    }}
-                                    className="flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs font-bold uppercase tracking-wide bg-gray-100 text-gray-600 hover:bg-gray-200"
-                                >
-                                    Copy <Share2 size={14} />
-                                </button>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => {
+                                            const link = `https://vastra-mandir.vercel.app/product/${item.id}`;
+                                            const text = `*${item.title}*\n\n${item.mrp ? `*MRP: ~₹${item.mrp}~* ` : ''}*Price: ₹${item.price.toLocaleString()}*\n\n🛒 Buy Here: ${link}`;
+                                            navigator.clipboard.writeText(text);
+                                            alert("Link copied!");
+                                        }}
+                                        className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-lg text-xs font-bold uppercase tracking-wide bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    >
+                                        Copy <Share2 size={14} />
+                                    </button>
+
+                                    <button
+                                        onClick={() => deleteItem(item.id)}
+                                        className="flex items-center justify-center px-4 rounded-lg text-red-500 bg-red-50 hover:bg-red-100 border border-red-100 transition-colors"
+                                        title="Delete Item"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     ))

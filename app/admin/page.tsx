@@ -10,14 +10,21 @@ import Link from "next/link";
 export default function AdminHubPage() {
     const [pin, setPin] = useState("");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isCheckingAuth, setIsCheckingAuth] = useState(true); // New loading state
     const [pendingCount, setPendingCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const session = localStorage.getItem("admin_session");
-        if (session === "true") {
-            setIsAuthenticated(true);
-            fetchStats();
+        try {
+            const session = localStorage.getItem("admin_session");
+            if (session === "true") {
+                setIsAuthenticated(true);
+                fetchStats();
+            }
+        } catch (e) {
+            console.error("Local storage access failed", e);
+        } finally {
+            setIsCheckingAuth(false);
         }
     }, []);
 
@@ -49,6 +56,14 @@ export default function AdminHubPage() {
 
     // Auto-login during dev for convenience (optional, remove for prod security strictness)
     // useEffect(() => { if (process.env.NODE_ENV === 'development') setIsAuthenticated(true); }, []);
+
+    if (isCheckingAuth) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
+                <Loader2 className="animate-spin text-gray-400" size={32} />
+            </div>
+        );
+    }
 
     if (!isAuthenticated) {
         return (
