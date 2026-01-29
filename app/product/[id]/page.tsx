@@ -95,13 +95,19 @@ export default function ProductPage() {
         }
     };
 
-    const handleAddToCart = () => {
-        if (!item) return;
+    const handleAddToCart = (): boolean => {
+        if (!item) return false;
 
         // Validation for new variant system
         if (item.variants && item.variants.length > 0) {
-            if (!selectedVariant) return alert("Please select a color");
-            if (!selectedSize) return alert("Please select a size");
+            if (!selectedVariant) {
+                alert("Please select a color");
+                return false;
+            }
+            if (!selectedSize) {
+                alert("Please select a size");
+                return false;
+            }
         }
 
         const sizeToUse = selectedSize || item.size || "NA";
@@ -120,6 +126,7 @@ export default function ProductPage() {
         });
 
         setCartOpen(true);
+        return true;
     };
 
     const handleShare = () => {
@@ -354,8 +361,10 @@ export default function ProductPage() {
                         </button>
                         <button
                             onClick={() => {
-                                handleAddToCart(); // Add to cart first
-                                setIsCheckoutOpen(true); // Then open checkout
+                                const success = handleAddToCart(); // Add to cart first
+                                if (success) {
+                                    setIsCheckoutOpen(true); // Only open checkout if validation passed
+                                }
                             }}
                             className="w-full bg-black text-white py-4 rounded-full text-xs uppercase tracking-widest hover:bg-gray-900 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2"
                         >
