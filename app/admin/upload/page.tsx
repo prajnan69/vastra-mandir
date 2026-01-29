@@ -42,8 +42,9 @@ export default function AdminUploadPage() {
 
     // Variants State
     const [variants, setVariants] = useState<Variant[]>([]);
+    const [isSimpleMode, setIsSimpleMode] = useState(false); // New Toggle
 
-    // Quick Add Variant State
+    // Quick Add Variant State (Also used for Simple Mode main variant)
     const [newVariantColor, setNewVariantColor] = useState("");
     const [newVariantStock, setNewVariantStock] = useState<{ [size: string]: number }>({});
     const [newVariantFiles, setNewVariantFiles] = useState<File[]>([]);
@@ -128,20 +129,25 @@ export default function AdminUploadPage() {
     // --- Submit ---
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (variants.length === 0) return alert("Please add at least one variant");
+
+        // Validation
+        if (!isSimpleMode && variants.length === 0) return alert("Please add at least one variant");
+        if (isSimpleMode) {
+            if (newVariantFiles.length === 0) return alert("Please add at least one image");
+            if (Object.keys(newVariantStock).length === 0) return alert("Please add stock for at least one size");
+        }
+
         setLoading(true);
 
         try {
             const allUploadedImageUrls: string[] = []; // Collect all for the 'images' column
             const finalVariants = [];
 
-            // Process each variant
-            for (const variant of variants) {
+            // Helper to process a variant (or the simple mode item)
+            const processVariant = async (color: string, stock: { [s: string]: number }, files: File[]) => {
                 const variantImageUrls: string[] = [];
-
-                // Upload images for this variant
-                for (const file of variant.imageFiles) {
-                    const fileName = `${Date.now()}-${variant.color}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+                for (const file of files) {
+                    const fileName = `${Date.now()}-${color || 'default'}-${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
                     const { error: uploadError } = await supabase.storage
                         .from('products')
                         .upload(fileName, file);
@@ -155,17 +161,23 @@ export default function AdminUploadPage() {
                     variantImageUrls.push(publicUrl);
                     allUploadedImageUrls.push(publicUrl);
                 }
+                return { color: color || "Standard", stock, images: variantImageUrls };
+            };
 
-                // IMPORTANT: We now store object `stock` instead of array `sizes`
-                finalVariants.push({
-                    color: variant.color,
-                    stock: variant.stock, // { "S": 5, "M": 2 }
-                    images: variantImageUrls
-                });
+            if (isSimpleMode) {
+                // Process single simple variant
+                const simpleVariant = await processVariant(newVariantColor, newVariantStock, newVariantFiles);
+                finalVariants.push(simpleVariant);
+            } else {
+                // Process list
+                for (const variant of variants) {
+                    const processed = await processVariant(variant.color, variant.stock, variant.imageFiles);
+                    finalVariants.push(processed);
+                }
             }
 
-            const sizesList = Array.from(new Set(variants.flatMap(v => Object.keys(v.stock)))).join(", ");
-            const colorsList = variants.map(v => v.color).join(", ");
+            const sizesList = Array.from(new Set(finalVariants.flatMap(v => Object.keys(v.stock)))).join(", ");
+            const colorsList = finalVariants.map(v => v.color).join(", ");
 
             // Insert into DB
             const { data, error } = await supabase
@@ -188,11 +200,11 @@ export default function AdminUploadPage() {
                 setUploadedItem({ ...data, variants: finalVariants });
             }
 
-            // Note: We do NOT clear form here anymore, so we can use the data for the copy function if needed, 
-            // or we use the data we just set in uploadedItem. 
-            // Let's clear the INPUTS but keep the variants in `uploadedItem` for the success screen.
+            // Cleanup
             setTitle(""); setPrice(""); setMrp(""); setDescription("");
             setVariants([]);
+            setNewVariantColor(""); setNewVariantStock({}); setNewVariantFiles([]); setNewVariantPreviews([]);
+
         } catch (error: any) {
             console.error(error);
             alert("Error uploading: " + error.message);
@@ -286,49 +298,61 @@ export default function AdminUploadPage() {
                             placeholder="Description" value={description} onChange={e => setDescription(e.target.value)} />
                     </div>
 
-                    {/* Variants Manager */}
-                    <div className="bg-gray-50 p-6 rounded-xl space-y-6 border border-gray-100">
-                        <h3 className="font-serif text-lg">Variants (Colors)</h3>
+                    {/* Upload Mode Toggle */}
+                    <div className="flex bg-gray-100 p-1 rounded-lg">
+                        <button
+                            type="button"
+                            onClick={() => setIsSimpleMode(true)}
+                            className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${isSimpleMode ? 'bg-white shadow text-black' : 'text-gray-500'}`}
+                        >
+                            Simple Product
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setIsSimpleMode(false)}
+                            className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${!isSimpleMode ? 'bg-white shadow text-black' : 'text-gray-500'}`}
+                        >
+                            Multi-Color Variants
+                        </button>
+                    </div>
 
-                        {/* List Added Variants */}
-                        <div className="space-y-2">
-                            {variants.map((v) => (
-                                <div key={v.id} className="flex items-center gap-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
-                                    <div className="w-10 h-10 relative bg-gray-100 rounded overflow-hidden">
-                                        <Image src={v.imageUrls[0]} alt={v.color} fill className="object-cover" />
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className="font-bold text-sm">{v.color}</p>
-                                        <div className="flex flex-wrap gap-2 mt-1">
-                                            {Object.entries(v.stock).map(([size, qty]) => (
-                                                <span key={size} className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-600 border border-gray-200">
-                                                    {size}: {qty}
-                                                </span>
-                                            ))}
+                    {/* Simple Mode Inputs */}
+                    {isSimpleMode ? (
+                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
+                            <h3 className="font-serif text-lg">Product Details</h3>
+
+                            {/* Images */}
+                            <div>
+                                <p className="text-xs uppercase text-gray-400 mb-3">Product Images</p>
+                                <div className="flex gap-2 overflow-x-auto pb-2">
+                                    {newVariantPreviews.map((url, i) => (
+                                        <div key={i} className="relative w-20 h-24 flex-shrink-0 rounded overflow-hidden border">
+                                            <Image src={url} alt="p" fill className="object-cover" />
+                                            <button type="button" onClick={() => removeVariantPreview(i)} className="absolute top-0 right-0 bg-white/80 p-0.5 rounded-bl">
+                                                <X size={12} />
+                                            </button>
                                         </div>
-                                    </div>
-                                    <button type="button" onClick={() => removeVariant(v.id)} className="text-red-400 hover:text-red-600 p-2">
-                                        <Trash2 size={16} />
-                                    </button>
+                                    ))}
+                                    <label className="w-20 h-24 flex-shrink-0 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-colors">
+                                        <Plus size={20} className="text-gray-400" />
+                                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleVariantImageSelect} />
+                                    </label>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
 
-                        {/* Add New Variant */}
-                        <div className="space-y-4 pt-4 border-t border-gray-200">
-                            <p className="text-xs uppercase tracking-widest text-gray-400">Add New Color Variant</p>
-
-                            <div className="flex gap-4 items-center">
+                            {/* Optional Color Name */}
+                            <div>
+                                <label className="text-xs uppercase text-gray-400 mb-1 block">Color Name (Optional)</label>
                                 <input
-                                    className="flex-1 py-2 px-3 border border-gray-200 rounded focus:border-black outline-none text-sm"
-                                    placeholder="Color Name (e.g. Royal Blue)"
+                                    className="w-full py-2 border-b border-gray-200 focus:border-black outline-none text-sm"
+                                    placeholder="e.g. Red (Leave empty if standard)"
                                     value={newVariantColor} onChange={e => setNewVariantColor(e.target.value)}
                                 />
                             </div>
 
-                            {/* Sizes & Stock */}
+                            {/* Stock */}
                             <div>
-                                <p className="text-[10px] uppercase text-gray-400 mb-2">Available Quantity per Size</p>
+                                <p className="text-xs uppercase text-gray-400 mb-3">Available Quantity per Size</p>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     {ALL_SIZES.map(s => (
                                         <div key={s} className={`flex items-center border rounded-lg p-2 transition-all ${newVariantStock[s] ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
@@ -344,37 +368,100 @@ export default function AdminUploadPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <p className="text-[10px] text-gray-400 mt-2">* Leave empty for 0 stock</p>
                             </div>
-
-                            {/* Images */}
-                            <div>
-                                <p className="text-[10px] uppercase text-gray-400 mb-2">Images for this color</p>
-                                <div className="flex gap-2 overflow-x-auto pb-2">
-                                    {newVariantPreviews.map((url, i) => (
-                                        <div key={i} className="relative w-16 h-20 flex-shrink-0 rounded overflow-hidden border">
-                                            <Image src={url} alt="p" fill className="object-cover" />
-                                            <button type="button" onClick={() => removeVariantPreview(i)} className="absolute top-0 right-0 bg-white/80 p-0.5 rounded-bl">
-                                                <X size={12} />
-                                            </button>
-                                        </div>
-                                    ))}
-                                    <label className="w-16 h-20 flex-shrink-0 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-colors">
-                                        <Plus size={16} className="text-gray-400" />
-                                        <input type="file" multiple accept="image/*" className="hidden" onChange={handleVariantImageSelect} />
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button
-                                type="button"
-                                onClick={addVariant}
-                                className="w-full py-3 bg-gray-900 text-white rounded-lg text-xs uppercase tracking-widest hover:bg-black transition-all"
-                            >
-                                Add Variant
-                            </button>
                         </div>
-                    </div>
+                    ) : (
+                        /* Variants Manager (Existing) */
+                        <div className="bg-gray-50 p-6 rounded-xl space-y-6 border border-gray-100">
+                            {/* ... existing variant Manager content ... */}
+                            <h3 className="font-serif text-lg">Variants (Colors)</h3>
+
+                            {/* List Added Variants */}
+                            <div className="space-y-2">
+                                {variants.map((v) => (
+                                    <div key={v.id} className="flex items-center gap-4 bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                                        <div className="w-10 h-10 relative bg-gray-100 rounded overflow-hidden">
+                                            <Image src={v.imageUrls[0]} alt={v.color} fill className="object-cover" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-bold text-sm">{v.color}</p>
+                                            <div className="flex flex-wrap gap-2 mt-1">
+                                                {Object.entries(v.stock).map(([size, qty]) => (
+                                                    <span key={size} className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-600 border border-gray-200">
+                                                        {size}: {qty}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <button type="button" onClick={() => removeVariant(v.id)} className="text-red-400 hover:text-red-600 p-2">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* Add New Variant */}
+                            <div className="space-y-4 pt-4 border-t border-gray-200">
+                                <p className="text-xs uppercase tracking-widest text-gray-400">Add New Color Variant</p>
+
+                                <div className="flex gap-4 items-center">
+                                    <input
+                                        className="flex-1 py-2 px-3 border border-gray-200 rounded focus:border-black outline-none text-sm"
+                                        placeholder="Color Name (e.g. Royal Blue)"
+                                        value={newVariantColor} onChange={e => setNewVariantColor(e.target.value)}
+                                    />
+                                </div>
+
+                                {/* Sizes & Stock */}
+                                <div>
+                                    <p className="text-[10px] uppercase text-gray-400 mb-2">Available Quantity per Size</p>
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                        {ALL_SIZES.map(s => (
+                                            <div key={s} className={`flex items-center border rounded-lg p-2 transition-all ${newVariantStock[s] ? 'border-black bg-gray-50' : 'border-gray-200'}`}>
+                                                <label className="text-xs font-bold w-8">{s}</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    placeholder="Qty"
+                                                    value={newVariantStock[s] || ""}
+                                                    onChange={(e) => handleStockChange(s, e.target.value)}
+                                                    className="w-full bg-transparent text-sm focus:outline-none text-right"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 mt-2">* Leave empty for 0 stock</p>
+                                </div>
+
+                                {/* Images */}
+                                <div>
+                                    <p className="text-[10px] uppercase text-gray-400 mb-2">Images for this color</p>
+                                    <div className="flex gap-2 overflow-x-auto pb-2">
+                                        {newVariantPreviews.map((url, i) => (
+                                            <div key={i} className="relative w-16 h-20 flex-shrink-0 rounded overflow-hidden border">
+                                                <Image src={url} alt="p" fill className="object-cover" />
+                                                <button type="button" onClick={() => removeVariantPreview(i)} className="absolute top-0 right-0 bg-white/80 p-0.5 rounded-bl">
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        <label className="w-16 h-20 flex-shrink-0 border border-dashed border-gray-300 rounded flex flex-col items-center justify-center cursor-pointer hover:border-black hover:bg-gray-50 transition-colors">
+                                            <Plus size={16} className="text-gray-400" />
+                                            <input type="file" multiple accept="image/*" className="hidden" onChange={handleVariantImageSelect} />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={addVariant}
+                                    className="w-full py-3 bg-gray-900 text-white rounded-lg text-xs uppercase tracking-widest hover:bg-black transition-all"
+                                >
+                                    Add Variant
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <button
                         type="submit"

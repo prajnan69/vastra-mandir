@@ -250,23 +250,33 @@ export default function ProductPage() {
                         {/* Variants Logic (New) */}
                         {hasVariants && (
                             <div className="space-y-6">
-                                {/* Colors */}
-                                <div className="space-y-2">
-                                    <span className="text-xs uppercase tracking-widest text-gray-500">
-                                        Color: <span className="text-black font-bold">{selectedVariant?.color}</span>
-                                    </span>
-                                    <div className="flex flex-wrap gap-3">
-                                        {item.variants!.map((variant) => (
-                                            <button
-                                                key={variant.color}
-                                                onClick={() => setSelectedVariant(variant)}
-                                                className={`relative w-12 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedVariant?.color === variant.color ? 'border-black ring-1 ring-black ring-offset-2' : 'border-transparent opacity-80 hover:opacity-100'}`}
-                                            >
-                                                <Image src={variant.images[0]} alt={variant.color} fill className="object-cover" />
-                                            </button>
-                                        ))}
+                                {/* Colors (Only show if multiple variants) */}
+                                {item.variants!.length > 1 && (
+                                    <div className="space-y-2">
+                                        <span className="text-xs uppercase tracking-widest text-gray-500">
+                                            Color: <span className="text-black font-bold">{selectedVariant?.color}</span>
+                                        </span>
+                                        <div className="flex flex-wrap gap-3">
+                                            {item.variants!.map((variant) => (
+                                                <button
+                                                    key={variant.color}
+                                                    onClick={() => setSelectedVariant(variant)}
+                                                    className={`relative w-12 h-16 rounded-lg overflow-hidden border-2 transition-all ${selectedVariant?.color === variant.color ? 'border-black ring-1 ring-black ring-offset-2' : 'border-transparent opacity-80 hover:opacity-100'}`}
+                                                >
+                                                    <Image src={variant.images[0]} alt={variant.color} fill className="object-cover" />
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
+                                )}
+
+                                {/* Single Color Label (Optional) */}
+                                {item.variants!.length === 1 && selectedVariant?.color && !['Standard', 'Default'].includes(selectedVariant.color) && (
+                                    <div className="bg-gray-50 px-4 py-2 rounded-lg border border-gray-100 inline-block">
+                                        <span className="text-[10px] uppercase tracking-widest text-gray-500 block">Color</span>
+                                        <span className="font-serif text-lg">{selectedVariant.color}</span>
+                                    </div>
+                                )}
 
                                 {/* Sizes */}
                                 <div className="space-y-2">
@@ -284,10 +294,10 @@ export default function ProductPage() {
                                                     onClick={() => !isOutOfStock && setSelectedSize(s)}
                                                     disabled={isOutOfStock}
                                                     className={`min-w-[40px] px-3 py-2 text-sm border rounded-lg transition-all relative ${selectedSize === s
-                                                            ? 'bg-black text-white border-black'
-                                                            : isOutOfStock
-                                                                ? 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed decoration-slice'
-                                                                : 'bg-white text-gray-600 border-gray-200 hover:border-black'
+                                                        ? 'bg-black text-white border-black'
+                                                        : isOutOfStock
+                                                            ? 'bg-gray-100 text-gray-400 border-gray-100 cursor-not-allowed decoration-slice'
+                                                            : 'bg-white text-gray-600 border-gray-200 hover:border-black'
                                                         }`}
                                                 >
                                                     {s}
