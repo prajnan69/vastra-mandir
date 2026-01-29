@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Upload, X, Loader2, Plus, Image as ImageIcon, Trash2 } from "lucide-react";
 import Image from "next/image";
