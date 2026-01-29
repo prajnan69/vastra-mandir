@@ -227,7 +227,11 @@ export default function AdminUploadPage() {
             colorText = `*Color: ${uploadedItem.color}*`;
         }
 
-        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n${colorText}\n*MRP: ~₹${mrp}~* *Price: ₹${price}*\n\n🛒 Buy Here: ${link}`;
+        // Use uploadedItem data because local state is cleared
+        const itemMrp = uploadedItem.mrp ? `*MRP: ~₹${uploadedItem.mrp}~* ` : "";
+        const itemPrice = uploadedItem.price ? `*Price: ₹${uploadedItem.price}*` : "";
+
+        const text = `*${uploadedItem.title}*\n\n${uploadedItem.description}\n\n${colorText}\n${itemMrp}${itemPrice}\n\n🛒 Buy Here: ${link}`;
 
         navigator.clipboard.writeText(text);
         alert("Copied to clipboard! Ready to paste in WhatsApp.");
