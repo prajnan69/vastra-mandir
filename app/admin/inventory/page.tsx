@@ -4,21 +4,32 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Loader2, Eye, EyeOff, Share2, Edit2, Check, X, Trash2, Package, Search } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { getRandomToast } from "@/lib/kannada-toasts";
 
+interface Variant {
+    color: string;
+    stock: { [size: string]: number };
+    images: string[];
+}
+
 interface Item {
     id: number;
     title: string;
     price: number;
     mrp: number | null;
+    description: string;
     images: string[];
     category?: string;
     is_sold_out: boolean;
+    variants?: Variant[];
 }
+
+const ALL_SIZES = ["XS", "S", "M", "L", "XL", "XXL", "Free Size"];
 
 export default function InventoryPage() {
     const [items, setItems] = useState<Item[]>([]);
@@ -28,6 +39,11 @@ export default function InventoryPage() {
     const [editMrp, setEditMrp] = useState("");
     const [savingMrp, setSavingMrp] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+
+    // Full Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingItem, setEditingItem] = useState<Item | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         fetchItems();
@@ -150,6 +166,59 @@ export default function InventoryPage() {
         }
     };
 
+    const handleFullEdit = (item: Item) => {
+        setEditingItem({ ...item });
+        setIsEditModalOpen(true);
+    };
+
+    const saveFullEdit = async () => {
+        if (!editingItem) return;
+        setIsSaving(true);
+        try {
+            const { error } = await supabase
+                .from('items')
+                .update({
+                    title: editingItem.title,
+                    description: editingItem.description,
+                    price: editingItem.price,
+                    mrp: editingItem.mrp,
+                    variants: editingItem.variants
+                })
+                .eq('id', editingItem.id);
+
+            if (error) throw error;
+
+            setItems(items.map(i => i.id === editingItem.id ? editingItem : i));
+            setIsEditModalOpen(false);
+            toast.success("Product updated successfully!");
+
+            // Track Action
+            const adminName = localStorage.getItem("admin_name") || "Unknown";
+            await supabase.from('admin_logs').insert([{
+                admin_name: adminName,
+                action: "EDIT_PRODUCT_DETAILS",
+                details: { product_id: editingItem.id, title: editingItem.title }
+            }]);
+        } catch (error) {
+            console.error("Error saving edits:", error);
+            toast.error(getRandomToast('errors'));
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const updateVariantStock = (variantIndex: number, size: string, qty: number) => {
+        if (!editingItem || !editingItem.variants) return;
+        const newVariants = [...editingItem.variants];
+        const stock = { ...newVariants[variantIndex].stock };
+
+        if (qty > 0) stock[size] = qty;
+        else delete stock[size];
+
+        newVariants[variantIndex].stock = stock;
+        setEditingItem({ ...editingItem, variants: newVariants });
+    };
+
     const filteredItems = items.filter(item =>
         item.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -218,11 +287,19 @@ export default function InventoryPage() {
                             <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                                 <div>
                                     <h3 className={`font-medium text-lg leading-tight truncate ${item.is_sold_out ? 'text-gray-500' : 'text-gray-900'}`}>{item.title}</h3>
-                                    {item.category && (
-                                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-zinc-50 border border-zinc-100 rounded-md text-[9px] font-bold text-zinc-400 uppercase tracking-widest mt-1">
-                                            {item.category}
-                                        </div>
-                                    )}
+                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                        {item.category && (
+                                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-zinc-50 border border-zinc-100 rounded-md text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                                                {item.category}
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => handleFullEdit(item)}
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-purple-600 uppercase tracking-wide hover:underline"
+                                        >
+                                            Edit Details <Edit2 size={10} />
+                                        </button>
+                                    </div>
                                     <div className="flex items-center gap-2 mt-2">
                                         <p className="text-sm font-bold text-zinc-700">₹{item.price.toLocaleString()}</p>
 
@@ -316,6 +393,138 @@ export default function InventoryPage() {
                     ))
                 )}
             </div>
+
+            {/* Edit Modal */}
+            <AnimatePresence>
+                {isEditModalOpen && editingItem && (
+                    <div className="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/60 backdrop-blur-sm p-0 md:p-6 animate-in fade-in duration-300">
+                        <motion.div
+                            initial={{ y: "100%" }}
+                            animate={{ y: 0 }}
+                            exit={{ y: "100%" }}
+                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                            className="bg-zinc-50 w-full max-w-2xl h-[90vh] md:h-auto md:max-h-[85vh] rounded-t-[2.5rem] md:rounded-[2.5rem] overflow-hidden flex flex-col shadow-2xl relative"
+                        >
+                            {/* Modal Header */}
+                            <div className="p-6 bg-white border-b border-zinc-100 flex items-center justify-between shrink-0">
+                                <div>
+                                    <h2 className="font-serif text-2xl text-zinc-900">Edit Product</h2>
+                                    <p className="text-[10px] text-zinc-400 uppercase tracking-widest mt-1">Update details & inventory</p>
+                                </div>
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="p-3 bg-zinc-50 rounded-full text-zinc-400 hover:text-zinc-900 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Modal Content Scrollable */}
+                            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 pb-32">
+                                {/* Basic Info */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block ml-1">Title</label>
+                                        <input
+                                            value={editingItem.title}
+                                            onChange={e => setEditingItem({ ...editingItem, title: e.target.value })}
+                                            className="w-full bg-white border border-zinc-200 rounded-2xl py-4 px-5 text-lg font-serif outline-none focus:ring-4 focus:ring-purple-500/5 focus:border-purple-300 transition-all"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block ml-1">Description</label>
+                                        <textarea
+                                            value={editingItem.description}
+                                            onChange={e => setEditingItem({ ...editingItem, description: e.target.value })}
+                                            className="w-full bg-white border border-zinc-200 rounded-2xl py-4 px-5 text-sm min-h-[120px] outline-none focus:ring-4 focus:ring-purple-500/5 focus:border-purple-300 transition-all resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block ml-1">Price (₹)</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.price}
+                                                onChange={e => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) || 0 })}
+                                                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 px-5 font-bold outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-2 block ml-1">MRP (₹)</label>
+                                            <input
+                                                type="number"
+                                                value={editingItem.mrp || ""}
+                                                onChange={e => setEditingItem({ ...editingItem, mrp: parseFloat(e.target.value) || null })}
+                                                className="w-full bg-white border border-zinc-200 rounded-2xl py-4 px-5 font-medium text-zinc-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Inventory / Variants */}
+                                <div className="pt-4 border-t border-zinc-100">
+                                    <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-6 block ml-1">Inventory Management</label>
+
+                                    <div className="space-y-8">
+                                        {editingItem.variants?.map((variant, vIdx) => (
+                                            <div key={vIdx} className="bg-white p-6 rounded-3xl border border-zinc-100 shadow-sm space-y-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full border border-black/5 flex items-center justify-center text-xs font-bold text-zinc-900 bg-zinc-50">
+                                                        {vIdx + 1}
+                                                    </div>
+                                                    <p className="font-bold text-zinc-900">{variant.color}</p>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                                    {ALL_SIZES.map(size => (
+                                                        <div key={size} className={`p-3 rounded-2xl border transition-all ${variant.stock[size] ? 'border-zinc-900 bg-zinc-900/5' : 'border-zinc-100 bg-zinc-50/50'}`}>
+                                                            <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 mb-1">{size}</p>
+                                                            <input
+                                                                type="number"
+                                                                min="0"
+                                                                value={variant.stock[size] || ""}
+                                                                placeholder="0"
+                                                                onChange={(e) => updateVariantStock(vIdx, size, parseInt(e.target.value) || 0)}
+                                                                className="w-full bg-transparent font-bold text-zinc-900 outline-none text-sm placeholder:text-zinc-200"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {!editingItem.variants || editingItem.variants.length === 0 && (
+                                            <div className="text-center py-8 bg-zinc-50 rounded-3xl border-2 border-dashed border-zinc-200 text-zinc-400 italic text-sm">
+                                                No specific variants found. Edit basic details or re-upload for variant support.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sticky Save Button */}
+                            <div className="absolute bottom-0 left-0 right-0 p-6 bg-white/80 backdrop-blur-xl border-t border-zinc-100 flex gap-4">
+                                <button
+                                    onClick={() => setIsEditModalOpen(false)}
+                                    className="flex-1 py-4 px-6 rounded-2xl text-xs font-bold uppercase tracking-widest text-zinc-400 bg-zinc-100 hover:bg-zinc-200 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={saveFullEdit}
+                                    disabled={isSaving}
+                                    className="flex-[2] py-4 px-6 rounded-2xl text-xs font-bold uppercase tracking-widest text-white bg-zinc-900 hover:bg-black transition-all flex items-center justify-center gap-2 shadow-xl shadow-black/10 disabled:opacity-50"
+                                >
+                                    {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
+                                    {isSaving ? "Saving..." : "Save Changes"}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
