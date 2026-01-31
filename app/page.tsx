@@ -70,10 +70,13 @@ export default function Home() {
     }
   };
 
-  const categories = ["All", ...Array.from(new Set(items.map(item => item.category?.trim().toUpperCase()).filter(Boolean)))];
+  const categories = ["All", ...Array.from(new Set(items.map(item =>
+    item.category?.trim().toUpperCase().replace(/[\u200B-\u200D\uFEFF]/g, '')
+  ).filter(Boolean)))];
 
   const filteredItems = items.filter(item => {
-    const isCategoryMatch = selectedCategory === "All" || item.category?.trim().toUpperCase() === selectedCategory;
+    const normalizedItemCat = item.category?.trim().toUpperCase().replace(/[\u200B-\u200D\uFEFF]/g, '');
+    const isCategoryMatch = selectedCategory === "All" || normalizedItemCat === selectedCategory;
     const isAvailabilityMatch = !showAvailableOnly || !item.is_sold_out;
     return isCategoryMatch && isAvailabilityMatch;
   });
@@ -178,7 +181,7 @@ export default function Home() {
               <div className="flex flex-col items-center gap-6 w-full max-w-2xl animate-fade-in">
                 <div className="w-full">
                   {/* Category Filter Chips - Scrollable on mobile */}
-                  <div className="flex overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-2 scrollbar-hide">
+                  <div className="flex overflow-x-auto sm:flex-wrap items-center justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-4 scrollbar-hide">
                     {categories.map((cat) => (
                       <button
                         key={cat}
