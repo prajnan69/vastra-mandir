@@ -332,6 +332,19 @@ export default function ProductPage() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Delivery Highlight */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.5 }}
+                                className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-amber-50/50 rounded-xl border border-amber-100/50 mt-2"
+                            >
+                                <div className="w-6 h-6 rounded-lg bg-amber-400 flex items-center justify-center shadow-sm">
+                                    <Truck size={12} className="text-white" />
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-900 font-bold">Delivery within 2 days</span>
+                            </motion.div>
                         </div>
 
                         {/* Interaction: Variants */}
@@ -434,7 +447,7 @@ export default function ProductPage() {
                                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
                                     <Truck size={14} />
                                 </div>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Fast Shipping</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">2-Day Express Delivery</span>
                             </div>
                         </div>
 

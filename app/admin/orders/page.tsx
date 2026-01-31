@@ -33,6 +33,8 @@ interface Order {
     item_price: number;
     status: string;
     order_items?: OrderItem[];
+    is_urgent?: boolean;
+    delivery_charge?: number;
 }
 
 type TabType = 'pending' | 'confirmed' | 'delivered';
@@ -165,20 +167,17 @@ Thank you for shopping with us. We hope you love your purchase!`;
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.9, x: 50, transition: { duration: 0.3 } }}
-                className="bg-white rounded-2xl p-6 shadow-[0_2px_15px_rgb(0,0,0,0.03)] border border-gray-100 relative overflow-hidden"
+                className={`bg-white rounded-[2rem] p-6 shadow-sm border ${order.is_urgent ? 'border-amber-200 bg-amber-50/20 shadow-amber-100 shadow-lg' : 'border-gray-100'} relative overflow-hidden`}
             >
-                {/* Status Badge */}
-                <div className="absolute top-0 right-0 p-3">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide ${activeTab === 'pending' ? 'bg-orange-100 text-orange-700' :
-                        activeTab === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                            'bg-green-100 text-green-700'
-                        }`}>
-                        {activeTab}
-                    </span>
-                </div>
+                {/* Urgent Header Badge */}
+                {order.is_urgent && (
+                    <div className="absolute top-0 right-0 bg-amber-400 text-amber-950 text-[9px] font-black uppercase tracking-widest px-4 py-1.5 rounded-bl-2xl flex items-center gap-1.5 shadow-sm z-10">
+                        <Truck size={10} strokeWidth={3} />
+                        Urgent One-Day
+                    </div>
+                )}
 
-                {/* Header: ID */}
-                <div className="flex justify-between items-start mb-4 border-b border-gray-50 pb-3 pr-20">
+                <div className="flex items-center justify-between mb-6">
                     <div>
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Order #{order.id}</span>
                         <p className="text-[10px] text-gray-400 mt-1">
@@ -191,6 +190,12 @@ Thank you for shopping with us. We hope you love your purchase!`;
                             })}
                         </p>
                     </div>
+                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wide ${activeTab === 'pending' ? 'bg-orange-100 text-orange-700' :
+                        activeTab === 'confirmed' ? 'bg-blue-100 text-blue-700' :
+                            'bg-green-100 text-green-700'
+                        }`}>
+                        {activeTab}
+                    </span>
                 </div>
 
                 {/* Order Items */}
@@ -273,7 +278,12 @@ Thank you for shopping with us. We hope you love your purchase!`;
 
                 {/* Total & Actions */}
                 <div className="flex items-center justify-between pt-2 mb-4">
-                    <span className="font-serif text-xl font-medium">₹{order.item_price.toLocaleString()}</span>
+                    <div className="flex flex-col">
+                        <span className="font-serif text-xl font-medium">₹{order.item_price.toLocaleString()}</span>
+                        {order.delivery_charge && order.delivery_charge > 0 && (
+                            <span className="text-[10px] text-amber-600 font-bold uppercase tracking-widest">+ ₹{order.delivery_charge} Priority Shipping</span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Action Buttons */}

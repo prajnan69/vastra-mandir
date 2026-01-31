@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useCart } from "@/context/CartContext";
-import { X, CheckCircle, Smartphone, Banknote, Loader2, ArrowRight } from "lucide-react";
+import { X, CheckCircle, Smartphone, Banknote, Loader2, ArrowRight, Truck } from "lucide-react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
 import { toast } from "sonner";
@@ -32,6 +32,7 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
         phone: "",
         pincode: "",
     });
+    const [isUrgent, setIsUrgent] = useState(false);
     const [paymentVpa, setPaymentVpa] = useState("7892460628@axl"); // Fallback default
 
     const WHATSAPP_PHONE = "8660627034";
@@ -72,7 +73,8 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
     }, [formData]);
 
     // Construct UPI Link
-    const upiLink = `upi://pay?pa=${paymentVpa}&am=${product.price}&cu=INR`;
+    const totalPrice = product.price + (isUrgent ? 50 : 0);
+    const upiLink = `upi://pay?pa=${paymentVpa}&am=${totalPrice}&cu=INR`;
 
     const triggerConfetti = () => {
         const duration = 2 * 1000;
@@ -182,8 +184,10 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                     customer_address: formData.address,
                     customer_pincode: formData.pincode,
                     item_title: product.title,
-                    item_price: product.price,
+                    item_price: totalPrice,
                     status: 'paid_online', // Optimistic for "App Payment" flow
+                    is_urgent: isUrgent,
+                    delivery_charge: isUrgent ? 50 : 0,
                     order_items: isCartCheckout ? cart : [{
                         title: product.title,
                         price: product.price,
@@ -224,8 +228,10 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                     customer_address: formData.address,
                     customer_pincode: formData.pincode,
                     item_title: product.title,
-                    item_price: product.price,
+                    item_price: totalPrice,
                     status: mode === 'online' ? 'paid_online' : 'cod_pending',
+                    is_urgent: isUrgent,
+                    delivery_charge: isUrgent ? 50 : 0,
                     order_items: isCartCheckout ? cart : [{
                         title: product.title,
                         price: product.price,
@@ -314,6 +320,29 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                                     value={formData.address}
                                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                                 />
+
+                                {/* Delivery Priority Option */}
+                                <div className="pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsUrgent(!isUrgent)}
+                                        className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between group ${isUrgent ? 'border-amber-400 bg-amber-50/50 shadow-lg shadow-amber-200/20' : 'border-gray-50 bg-gray-50/30'}`}
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isUrgent ? 'bg-amber-400 text-white' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                                                <Truck size={20} />
+                                            </div>
+                                            <div className="text-left">
+                                                <p className={`text-xs font-bold uppercase tracking-widest ${isUrgent ? 'text-amber-900' : 'text-gray-400'}`}>One-Day Priority Delivery</p>
+                                                <p className="text-[10px] text-gray-400">Delivered within 24 hours</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className={`text-sm font-bold ${isUrgent ? 'text-amber-900' : 'text-gray-400'}`}>+₹50</span>
+                                            {isUrgent && <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-1" />}
+                                        </div>
+                                    </button>
+                                </div>
                             </div>
                             <button
                                 type="submit"
@@ -328,7 +357,10 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                             {/* Amount */}
                             <div className="space-y-1 pb-4 border-b border-gray-50">
                                 <p className="text-xs uppercase tracking-widest text-gray-500">Total Amount</p>
-                                <div className="text-3xl font-serif font-medium">₹{product.price.toLocaleString()}</div>
+                                <div className="text-3xl font-serif font-medium">₹{totalPrice.toLocaleString()}</div>
+                                {isUrgent && (
+                                    <p className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">+ Includes ₹50 Priority Shipping</p>
+                                )}
                             </div>
 
                             {/* QR Section - Hidden on Mobile, Visible on Desktop */}

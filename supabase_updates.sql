@@ -9,6 +9,8 @@ ALTER TABLE public.items ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FAL
 -- 2. Add Variant and Multi-item support to Orders
 -- This stores the detailed JSON of all items in an order (color, size, quantity)
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_items JSONB;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS is_urgent BOOLEAN DEFAULT FALSE;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_charge INTEGER DEFAULT 0;
 
 -- 3. Create Settings table for Store-wide configuration
 -- Used for dynamic UPI ID management
