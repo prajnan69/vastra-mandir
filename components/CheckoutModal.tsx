@@ -6,6 +6,8 @@ import { useCart } from "@/context/CartContext";
 import { X, CheckCircle, Smartphone, Banknote, Loader2, ArrowRight } from "lucide-react";
 import confetti from "canvas-confetti";
 import Image from "next/image";
+import { toast } from "sonner";
+import { getRandomToast } from "@/lib/kannada-toasts";
 
 interface CheckoutModalProps {
     isOpen: boolean;
@@ -27,11 +29,31 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
         phone: "",
         pincode: "",
     });
+    const [paymentVpa, setPaymentVpa] = useState("7892460628@axl"); // Fallback default
 
-
-    // UPDATED VPA
-    const PAYMENT_VPA = "7892460628@axl";
     const WHATSAPP_PHONE = "8660627034";
+
+    // Fetch UPI ID from database
+    useEffect(() => {
+        const fetchUpiId = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('settings')
+                    .select('value')
+                    .eq('key', 'upi_id')
+                    .single();
+
+                if (data && !error) {
+                    setPaymentVpa(data.value);
+                }
+            } catch (err) {
+                console.error("Error fetching UPI ID:", err);
+                // Keep using fallback value
+            }
+        };
+
+        fetchUpiId();
+    }, []);
 
     // Load from local storage
     useEffect(() => {
@@ -47,8 +69,7 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
     }, [formData]);
 
     // Construct UPI Link
-    // pn removed to let app resolve VPA or show number
-    const upiLink = `upi://pay?pa=${PAYMENT_VPA}&am=${product.price}&cu=INR`;
+    const upiLink = `upi://pay?pa=${paymentVpa}&am=${product.price}&cu=INR`;
 
     const triggerConfetti = () => {
         const duration = 2 * 1000;
@@ -210,7 +231,7 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
 
         } catch (err) {
             console.error("Unexpected error:", err);
-            alert("Something went wrong. Please try again.");
+            toast.error(getRandomToast('errors'));
         } finally {
             setLoading(false);
         }
@@ -300,7 +321,7 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                                     <Image src="/qr.png" alt="Scan QR" fill className="object-contain p-2" />
                                 </div>
                                 <p className="text-[10px] text-gray-400">
-                                    UPI ID: {PAYMENT_VPA}
+                                    UPI ID: {paymentVpa}
                                 </p>
                             </div>
 

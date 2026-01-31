@@ -6,7 +6,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, ChevronDown, SlidersHorizontal, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface Item {
   id: number;
@@ -14,6 +15,7 @@ interface Item {
   price: number;
   description: string;
   images: string[];
+  category?: string;
   is_sold_out?: boolean;
 }
 
@@ -21,10 +23,18 @@ export default function Home() {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [scrolled, setScrolled] = useState(false);
   const { cart, setCartOpen } = useCart();
 
   useEffect(() => {
     fetchItems();
+
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const fetchItems = async () => {
@@ -32,16 +42,10 @@ export default function Home() {
       const { data, error } = await supabase
         .from('items')
         .select('*')
-
         .order('created_at', { ascending: false });
 
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        setItems(data);
-      }
+      if (error) throw error;
+      if (data) setItems(data);
     } catch (error) {
       console.error("Error fetching items:", error);
     } finally {
@@ -49,108 +53,237 @@ export default function Home() {
     }
   };
 
-  const filteredItems = showAvailableOnly
-    ? items.filter(item => !item.is_sold_out)
-    : items;
+  const categories = ["All", ...Array.from(new Set(items.map(item => item.category).filter(Boolean)))];
+
+  const filteredItems = items.filter(item => {
+    const isCategoryMatch = selectedCategory === "All" || item.category === selectedCategory;
+    const isAvailabilityMatch = !showAvailableOnly || !item.is_sold_out;
+    return isCategoryMatch && isAvailabilityMatch;
+  });
 
   return (
-    <main className="min-h-screen">
-      {/* Minimal Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 md:py-6 flex items-center justify-between">
-          {/* Invisible spacer for balance if needed, or just left aligned brand? Let's do Center Brand, Right Cart */}
-          <div className="w-10"></div>
+    <main className="min-h-screen bg-[#FCFCFC]">
+      {/* Premium Sticky Header */}
+      <header
+        className={`sticky top-0 z-50 transition-all duration-500 ${scrolled
+          ? 'bg-white/80 backdrop-blur-xl border-b border-gray-100 py-3'
+          : 'bg-transparent py-6'
+          }`}
+      >
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          <div className="w-10 md:hidden"></div> {/* Balance for mobile */}
 
-          <h1 className="text-xl md:text-3xl font-serif tracking-widest uppercase text-black">Vastra Mandir</h1>
+          <div className="hidden md:flex items-center gap-6">
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 hover:text-black cursor-pointer transition-colors">Collection</span>
+            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400 hover:text-black cursor-pointer transition-colors">About</span>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col items-center"
+          >
+            <h1 className="text-xl md:text-3xl font-serif tracking-[0.3em] uppercase text-black">Vastra Mandir</h1>
+            {!scrolled && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-[8px] md:text-[10px] uppercase tracking-[0.4em] text-gray-400 mt-1"
+              >
+                The Essence of Tradition
+              </motion.span>
+            )}
+          </motion.div>
 
           <button
             onClick={() => setCartOpen(true)}
-            className="w-10 h-10 flex items-center justify-center relative hover:bg-gray-100 rounded-full transition-all"
+            className="w-10 h-10 flex items-center justify-center relative hover:bg-gray-100 rounded-full transition-all group scale-100 active:scale-90"
           >
-            <ShoppingBag size={20} />
-            {cart.length > 0 && (
-              <span className="absolute top-1 right-1 w-4 h-4 bg-black text-white text-[10px] font-bold flex items-center justify-center rounded-full">
-                {cart.length}
-              </span>
-            )}
+            <ShoppingBag size={20} className="group-hover:scale-110 transition-transform" />
+            <AnimatePresence>
+              {cart.length > 0 && (
+                <motion.span
+                  initial={{ scale: 0, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0, opacity: 0 }}
+                  className="absolute top-1 right-1 w-4 h-4 bg-black text-white text-[9px] font-bold flex items-center justify-center rounded-full ring-2 ring-white"
+                >
+                  {cart.length}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </button>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative px-4 py-10 md:py-20 text-center bg-[#FDFBF7]">
-        <div className="max-w-2xl mx-auto space-y-4 md:space-y-6">
-          <div className="w-16 h-[1px] bg-black/20 mx-auto mb-4 md:mb-8"></div>
-          <h2 className="text-3xl md:text-6xl font-serif italic text-gray-900 leading-tight">
-            Wear the Essence of Tradition
-          </h2>
-          <p className="text-gray-500 font-light tracking-wide text-xs md:text-lg uppercase pl-1">
-            Premium Handpicked Collection
-          </p>
-          <div className="w-16 h-[1px] bg-black/20 mx-auto mt-8"></div>
-          <div className="w-16 h-[1px] bg-black/20 mx-auto mt-8"></div>
+      {/* Elegant Hero Section */}
+      <section className="relative pt-12 pb-24 md:pt-24 md:pb-40 text-center overflow-hidden">
+        {/* Background Decorative Elements */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-full pointer-events-none opacity-40">
+          <div className="absolute top-0 right-[25%] w-96 h-96 bg-orange-50 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 left-[25%] w-96 h-96 bg-purple-50 rounded-full blur-[100px]" />
         </div>
 
-        {/* Filter Toggle */}
-        <div className="flex justify-center mt-12">
-          <button
-            onClick={() => setShowAvailableOnly(!showAvailableOnly)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-full text-xs font-bold uppercase tracking-widest transition-all ${showAvailableOnly
-              ? 'bg-black text-white shadow-lg'
-              : 'bg-white text-gray-900 border border-gray-200 hover:border-black'
-              }`}
+        <div className="max-w-4xl mx-auto px-6 relative z-10 space-y-8">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center justify-center gap-3 mb-4"
           >
-            {showAvailableOnly ? (
-              <>
-                <span>Showing Available</span>
-                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-              </>
-            ) : (
-              <>
-                <span>Show Available Only</span>
-                <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-              </>
-            )}
-          </button>
+            <div className="w-8 h-[1px] bg-black/10"></div>
+            <Sparkles size={12} className="text-orange-300" />
+            <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-gray-400 pl-1">Handpicked Luxury</span>
+            <div className="w-8 h-[1px] bg-black/10"></div>
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl md:text-8xl font-serif italic text-gray-900 leading-[1.1] tracking-tight"
+          >
+            Crafting Elegance <br /> In Every Thread
+          </motion.h2>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.5, delay: 0.5 }}
+            className="flex flex-col items-center gap-8 mt-12"
+          >
+            <p className="max-w-md text-gray-500 font-light leading-relaxed text-sm md:text-base">
+              Discover a curated collection where traditional craftsmanship meets modern sophistication.
+            </p>
+
+            <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
+              {/* Category Filter Chips */}
+              <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 w-full">
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat as string)}
+                    className={`px-5 py-2 md:px-7 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 scale-100 h-10 md:h-12 flex items-center shadow-sm ${selectedCategory === cat
+                        ? 'bg-black text-white shadow-xl shadow-black/10'
+                        : 'bg-white/50 backdrop-blur-md text-gray-400 border border-gray-100 hover:border-black/10 hover:text-black'
+                      }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setShowAvailableOnly(!showAvailableOnly)}
+                  className={`group relative overflow-hidden px-8 py-4 rounded-full transition-all duration-500 flex items-center gap-3 active:scale-95 h-10 md:h-12 border ${showAvailableOnly
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-lg shadow-emerald-500/5'
+                      : 'bg-white/50 backdrop-blur-md text-gray-900 border-gray-100 hover:border-black/20 shadow-sm'
+                    }`}
+                >
+                  <SlidersHorizontal size={14} className={showAvailableOnly ? 'animate-pulse' : ''} />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
+                    {showAvailableOnly ? 'Showing Available' : 'Filter Available'}
+                  </span>
+                  {showAvailableOnly && (
+                    <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="mt-12 text-gray-300 cursor-pointer"
+              onClick={() => window.scrollTo({ top: window.innerHeight * 0.8, behavior: 'smooth' })}
+            >
+              <ChevronDown size={24} strokeWidth={1} />
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Grid */}
-      <div className="max-w-7xl mx-auto px-3 md:px-4 py-8 md:py-20">
+      {/* Refined Product Grid */}
+      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-32">
+        <div className="flex items-center justify-between mb-12 md:mb-20 px-2">
+          <div>
+            <h3 className="text-2xl md:text-4xl font-serif italic">Our Collection</h3>
+            <p className="text-[10px] uppercase tracking-[0.3em] text-gray-400 mt-2">Selected Wearables</p>
+          </div>
+          <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-300">
+            {filteredItems.length} Products
+          </div>
+        </div>
+
         {loading ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-12">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="aspect-[3/4] bg-gray-100 animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-12 md:gap-x-12 md:gap-y-24">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="space-y-4">
+                <div className="aspect-[3/4] bg-gray-100 animate-pulse rounded-2xl" />
+                <div className="h-4 w-2/3 bg-gray-100 animate-pulse rounded mx-auto" />
+                <div className="h-3 w-1/3 bg-gray-50 animate-pulse rounded mx-auto" />
+              </div>
             ))}
           </div>
         ) : items.length > 0 ? (
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-3 gap-y-8 md:gap-x-8 md:gap-y-12">
-            {filteredItems.map((item) => (
-              <ProductCard key={item.id} product={item} />
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-12 md:gap-x-12 md:gap-y-24">
+            {filteredItems.map((item, index) => (
+              <ProductCard key={item.id} product={item} index={index} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 border border-gray-100 bg-white p-12 max-w-md mx-auto">
-            <p className="text-xl font-serif italic text-gray-400 mb-2">
-              {showAvailableOnly ? "No available items found." : "The collection is currently empty."}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-32 glass border-none rounded-[3rem] max-w-xl mx-auto"
+          >
+            <p className="text-2xl font-serif italic text-gray-400 mb-4 px-8">
+              {showAvailableOnly ? "The collection is flying off the shelves. Check back shortly." : "We're curating something special for you."}
             </p>
-            <p className="text-sm text-gray-400 uppercase tracking-widest">Check back soon for new arrivals</p>
-          </div>
+            <p className="text-[10px] text-gray-400 uppercase tracking-[0.3em] font-medium">Coming Soon</p>
+          </motion.div>
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="py-12 text-center border-t border-gray-100 bg-white">
-        <p className="font-serif text-xl mb-3 text-black">Vastra Mandir</p>
-        <p className="text-xs text-gray-400 uppercase tracking-widest mb-6">Wear the Essence of Tradition</p>
+      {/* Premium Footer */}
+      <footer className="pt-32 pb-16 bg-white border-t border-gray-50 overflow-hidden relative">
+        <div className="max-w-7xl mx-auto px-8 relative z-10 flex flex-col items-center">
+          <h2 className="text-2xl md:text-5xl font-serif tracking-[0.4em] uppercase mb-4">Vastra Mandir</h2>
+          <p className="text-xs text-gray-400 uppercase tracking-[0.3em] mb-12">Wear the Essence of Tradition</p>
 
-        <a href="tel:9743174487" className="inline-block border border-gray-200 rounded-full px-5 py-2 text-[10px] uppercase tracking-widest hover:bg-black hover:text-white transition-all hover:border-black mb-8">
-          Need Help? Call +91 9743174487
-        </a>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-12 w-full max-w-3xl mb-24 text-center md:text-left">
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-black">Shop</h4>
+              <ul className="text-xs text-gray-400 space-y-2 font-light">
+                <li className="hover:text-black cursor-pointer transition-colors">New Arrivals</li>
+                <li className="hover:text-black cursor-pointer transition-colors">Collection</li>
+                <li className="hover:text-black cursor-pointer transition-colors">Sale</li>
+              </ul>
+            </div>
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-black">Info</h4>
+              <ul className="text-xs text-gray-400 space-y-2 font-light">
+                <li className="hover:text-black cursor-pointer transition-colors">Our Story</li>
+                <li className="hover:text-black cursor-pointer transition-colors">Terms</li>
+                <li className="hover:text-black cursor-pointer transition-colors">Privacy</li>
+              </ul>
+            </div>
+            <div className="space-y-4 col-span-2">
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-black">Connect</h4>
+              <a href="tel:9743174487" className="inline-block border border-black/5 rounded-full px-8 py-3 text-[10px] font-bold uppercase tracking-[0.2em] transition-all hover:bg-black hover:text-white hover:border-black active:scale-95 shadow-sm">
+                Call +91 9743174487
+              </a>
+            </div>
+          </div>
 
-        <p className="text-gray-300 text-[10px] uppercase tracking-widest">
-          © {new Date().getFullYear()} Vastra Mandir. All Rights Reserved.
-        </p>
+          <div className="w-full h-[1px] bg-black/5 mb-8"></div>
+
+          <p className="text-gray-300 text-[9px] uppercase tracking-[0.5em] font-medium">
+            © {new Date().getFullYear()} Vastra Mandir. Designed for Excellence.
+          </p>
+        </div>
       </footer>
     </main>
   );

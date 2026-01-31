@@ -4,6 +4,7 @@ import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair" });
@@ -39,6 +40,7 @@ export default function RootLayout({
           <CartDrawer />
         </CartProvider>
         <ServiceWorkerRegister />
+        <Toaster position="top-center" richColors expand={true} />
       </body>
     </html>
   );
