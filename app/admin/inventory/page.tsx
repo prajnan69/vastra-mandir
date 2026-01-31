@@ -38,6 +38,7 @@ export default function InventoryPage() {
             const { data, error } = await supabase
                 .from('items')
                 .select('*')
+                .eq('is_deleted', false)
                 .order('created_at', { ascending: false });
 
             if (error) throw error;
@@ -128,7 +129,7 @@ export default function InventoryPage() {
         try {
             const { error } = await supabase
                 .from('items')
-                .delete()
+                .update({ is_deleted: true })
                 .eq('id', id);
 
             if (error) throw error;

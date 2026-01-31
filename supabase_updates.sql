@@ -4,6 +4,7 @@
 -- 1. Add Category support to Items (Products)
 -- Based on your schema, this column is currently missing
 ALTER TABLE public.items ADD COLUMN IF NOT EXISTS category TEXT;
+ALTER TABLE public.items ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;
 
 -- 2. Add Variant and Multi-item support to Orders
 -- This stores the detailed JSON of all items in an order (color, size, quantity)

@@ -82,6 +82,7 @@ export default function ProductPage() {
                 .from('items')
                 .select('*')
                 .eq('id', id)
+                .eq('is_deleted', false)
                 .single();
             if (error) throw error;
             if (data) setItem(data);
