@@ -19,8 +19,32 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Vastra Mandir",
-  description: "Wear the Essence of Tradition",
+  metadataBase: new URL("https://vastra-mandir.vercel.app"),
+  title: {
+    default: "Vastra Mandir",
+    template: "%s | Vastra Mandir"
+  },
+  description: "Wear the Essence of Tradition - Handpicked Luxury Collection",
+  openGraph: {
+    type: "website",
+    siteName: "Vastra Mandir",
+    title: "Vastra Mandir",
+    description: "Discover a curated collection where traditional craftsmanship meets modern sophistication.",
+    images: [
+      {
+        url: "/og-image.jpg", // We should ensure this image exists or use a high-res product as fallback
+        width: 1200,
+        height: 630,
+        alt: "Vastra Mandir Luxury Collection",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Vastra Mandir",
+    description: "The Essence of Tradition - Handpicked Luxury Collection",
+    images: ["/og-image.jpg"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",

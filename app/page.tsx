@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import ProductCard from "@/components/ProductCard";
 import { useCart } from "@/context/CartContext";
-import { ShoppingBag, ChevronDown, SlidersHorizontal, Sparkles } from "lucide-react";
+import { ShoppingBag, ChevronDown, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface Item {
@@ -25,6 +25,8 @@ export default function Home() {
   const [showAvailableOnly, setShowAvailableOnly] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [scrolled, setScrolled] = useState(false);
+  const [showFAB, setShowFAB] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const { cart, setCartOpen } = useCart();
 
   useEffect(() => {
@@ -34,11 +36,12 @@ export default function Home() {
     const parent = document.querySelector('.snap-parent');
 
     const handleScroll = () => {
-      if (isDesktop) {
-        setScrolled(window.scrollY > 50);
-      } else if (parent) {
-        setScrolled(parent.scrollTop > 50);
-      }
+      const scrollPos = isDesktop ? window.scrollY : (parent?.scrollTop || 0);
+      setScrolled(scrollPos > 50);
+
+      // Show FAB after hero (approx 70% of viewport)
+      const threshold = window.innerHeight * 0.7;
+      setShowFAB(scrollPos > threshold);
     };
 
     if (isDesktop) {
@@ -178,7 +181,7 @@ export default function Home() {
             </p>
 
             {categories.length > 1 && (
-              <div className="flex flex-col items-center gap-6 w-full max-w-2xl animate-fade-in">
+              <div className="hidden sm:flex flex-col items-center gap-6 w-full max-w-2xl animate-fade-in">
                 <div className="w-full">
                   {/* Category Filter Chips - Scrollable on mobile */}
                   <div className="flex overflow-x-auto sm:flex-wrap items-center justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-4 scrollbar-hide">
@@ -266,6 +269,68 @@ export default function Home() {
           </motion.div>
         )}
       </div>
+
+      {/* Mobile Floating Filter Button */}
+      <AnimatePresence>
+        {showFAB && (
+          <motion.div
+            initial={{ opacity: 0, y: 100 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 100 }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] sm:hidden"
+          >
+            <div className="relative">
+              <AnimatePresence>
+                {isFilterOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                    className="absolute bottom-full mb-6 left-1/2 -translate-x-1/2 w-[90vw] bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 p-6 space-y-4"
+                  >
+                    <div className="flex justify-between items-center mb-2 px-2">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Filter By Category</span>
+                      <button onClick={() => setIsFilterOpen(false)} className="text-gray-400"><X size={16} /></button>
+                    </div>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => {
+                            setSelectedCategory(cat as string);
+                            setIsFilterOpen(false);
+                            // Scroll to collection header
+                            const container = document.querySelector('.snap-parent');
+                            if (container) {
+                              container.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+                            }
+                          }}
+                          className={`px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat
+                            ? 'bg-black text-white'
+                            : 'bg-gray-50 text-gray-400 hover:text-black'
+                            }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={`h-14 px-8 rounded-full shadow-2xl flex items-center gap-3 transition-colors duration-500 bg-black text-white shadow-black/20`}
+              >
+                <SlidersHorizontal size={18} />
+                <span className="text-[11px] font-bold uppercase tracking-[0.2em]">{selectedCategory === "All" ? "Filter" : selectedCategory}</span>
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Premium Footer */}
       <footer className="pt-32 pb-16 bg-white border-t border-gray-50 overflow-hidden relative">
