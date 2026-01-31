@@ -13,6 +13,8 @@ interface CheckoutModalProps {
     isOpen: boolean;
     onClose: () => void;
     product: {
+        id?: number;
+        itemId?: number;
         title: string;
         price: number;
         images?: string[];
@@ -73,7 +75,9 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
     }, [formData]);
 
     // Construct UPI Link
-    const totalPrice = product.price + (isUrgent ? 50 : 0);
+    const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const basePrice = isCartCheckout ? cartTotal : product.price;
+    const totalPrice = basePrice + (isUrgent ? 50 : 0);
     const upiLink = `upi://pay?pa=${paymentVpa}&am=${totalPrice}&cu=INR`;
 
     const triggerConfetti = () => {
@@ -103,14 +107,18 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
 
     // --- Inventory Management Logic ---
     const updateInventory = async (): Promise<boolean> => {
-        const itemsToProcess = isCartCheckout ? cart : [];
-        // Note: For single "Buy Now" flow (non-cart), we don't have enough info here (size/color) passed easily 
-        // unless we refactor. But our "Buy Now" button conveniently Adds to Cart first now (in ProductPage).
-        // So we can rely on `cart` being populated even for "Buy Now" if the flow is correct.
-        // However, if `isCartCheckout` is false, it means we are in a legacy flow or direct buy.
-        // For robustness, let's assume `isCartCheckout` is ALWAYS true for the new system.
+        const itemsToProcess = isCartCheckout ? cart : [{
+            id: String(product.id || product.itemId),
+            itemId: product.id || product.itemId,
+            title: product.title,
+            price: product.price,
+            image: product.images?.[0] || "",
+            color: product.color || "Default",
+            size: product.size || "NA",
+            quantity: 1
+        }];
 
-        if (itemsToProcess.length === 0) return true; // Nothing to update
+        if (itemsToProcess.length === 0 || !itemsToProcess[0].itemId) return true; // Nothing to update
 
         // Using a loop for simplicity, though a stored procedure would be safer for atomic transactions
         for (const item of itemsToProcess) {

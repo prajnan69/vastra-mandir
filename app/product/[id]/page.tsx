@@ -93,7 +93,7 @@ export default function ProductPage() {
         }
     };
 
-    const handleAddToCart = (): boolean => {
+    const validateSelection = (): boolean => {
         if (!item) return false;
         if (item.variants && item.variants.length > 0) {
             if (!selectedVariant) {
@@ -105,6 +105,11 @@ export default function ProductPage() {
                 return false;
             }
         }
+        return true;
+    };
+
+    const handleAddToCart = (): boolean => {
+        if (!validateSelection() || !item) return false;
 
         const sizeToUse = selectedSize || item.size || "NA";
         const colorToUse = selectedVariant?.color || item.color || "NA";
@@ -487,7 +492,7 @@ export default function ProductPage() {
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                    onClick={() => handleAddToCart() && setIsCheckoutOpen(true)}
+                                    onClick={() => validateSelection() && setIsCheckoutOpen(true)}
                                     className="flex-[1.5] bg-black text-white h-16 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-black/20 flex items-center justify-center gap-3 group"
                                 >
                                     Secure Checkout
@@ -507,7 +512,7 @@ export default function ProductPage() {
                     color: selectedVariant?.color || item?.color,
                     size: selectedSize || item?.size
                 }}
-                isCartCheckout={true}
+                isCartCheckout={false}
             />
         </div>
     );
