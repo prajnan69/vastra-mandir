@@ -488,7 +488,11 @@ export default function ProductPage() {
             <CheckoutModal
                 isOpen={isCheckoutOpen}
                 onClose={() => setIsCheckoutOpen(false)}
-                product={item}
+                product={{
+                    ...item!,
+                    color: selectedVariant?.color || item?.color,
+                    size: selectedSize || item?.size
+                }}
                 isCartCheckout={true}
             />
         </div>

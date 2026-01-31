@@ -30,11 +30,12 @@ export default function Home() {
   useEffect(() => {
     fetchItems();
 
+    const parent = document.querySelector('.snap-parent');
     const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
+      if (parent) setScrolled(parent.scrollTop > 50);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    parent?.addEventListener("scroll", handleScroll);
+    return () => parent?.removeEventListener("scroll", handleScroll);
   }, []);
 
   const fetchItems = async () => {
@@ -62,7 +63,7 @@ export default function Home() {
   });
 
   return (
-    <main className="min-h-screen bg-[#FCFCFC]">
+    <main className="snap-parent bg-[#FCFCFC]">
       {/* Premium Sticky Header */}
       <header
         className={`sticky top-0 z-50 transition-all duration-500 ${scrolled
@@ -118,19 +119,19 @@ export default function Home() {
       </header>
 
       {/* Elegant Hero Section */}
-      <section className="relative pt-12 pb-24 md:pt-24 md:pb-40 text-center overflow-hidden">
+      <section className="snap-child relative h-[100dvh] w-full flex flex-col items-center justify-center text-center overflow-hidden">
         {/* Background Decorative Elements */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[200%] h-full pointer-events-none opacity-40">
-          <div className="absolute top-0 right-[25%] w-96 h-96 bg-orange-50 rounded-full blur-[100px]" />
-          <div className="absolute bottom-0 left-[25%] w-96 h-96 bg-purple-50 rounded-full blur-[100px]" />
+        <div className="absolute inset-0 pointer-events-none opacity-40">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-orange-50/50 rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-50/50 rounded-full blur-[120px]" />
         </div>
 
-        <div className="max-w-4xl mx-auto px-6 relative z-10 space-y-8">
+        <div className="max-w-4xl mx-auto px-6 relative z-10 flex flex-col items-center justify-center flex-1">
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-            className="flex items-center justify-center gap-3 mb-4"
+            className="flex items-center justify-center gap-3 mb-8"
           >
             <div className="w-8 h-[1px] bg-black/10"></div>
             <Sparkles size={12} className="text-orange-300" />
@@ -157,58 +158,56 @@ export default function Home() {
               Discover a curated collection where traditional craftsmanship meets modern sophistication.
             </p>
 
-            <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
-              <div className="w-full">
-                {/* Category Filter Chips - Scrollable on mobile */}
-                <div className="flex overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-2 scrollbar-hide">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat}
-                      onClick={() => setSelectedCategory(cat as string)}
-                      className={`px-5 py-2 md:px-7 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 h-10 md:h-12 flex items-center shadow-sm ${selectedCategory === cat
-                        ? 'bg-black text-white shadow-xl shadow-black/10'
-                        : 'bg-white/50 backdrop-blur-md text-gray-400 border border-gray-100 hover:border-black/10 hover:text-black'
-                        }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+            {categories.length > 1 && (
+              <div className="flex flex-col items-center gap-6 w-full max-w-2xl animate-fade-in">
+                <div className="w-full">
+                  {/* Category Filter Chips - Scrollable on mobile */}
+                  <div className="flex overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-2 scrollbar-hide">
+                    {categories.map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => setSelectedCategory(cat as string)}
+                        className={`px-5 py-2 md:px-7 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 h-10 md:h-12 flex items-center shadow-sm ${selectedCategory === cat
+                          ? 'bg-black text-white shadow-xl shadow-black/10'
+                          : 'bg-white/50 backdrop-blur-md text-gray-400 border border-gray-100 hover:border-black/10 hover:text-black'
+                          }`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowAvailableOnly(!showAvailableOnly)}
-                  className={`group relative overflow-hidden px-8 py-4 rounded-full transition-all duration-500 flex items-center gap-3 active:scale-95 h-10 md:h-12 border ${showAvailableOnly
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-lg shadow-emerald-500/5'
-                    : 'bg-white/50 backdrop-blur-md text-gray-900 border-gray-100 hover:border-black/20 shadow-sm'
-                    }`}
-                >
-                  <SlidersHorizontal size={14} className={showAvailableOnly ? 'animate-pulse' : ''} />
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
-                    {showAvailableOnly ? 'Showing Available' : 'Filter Available'}
-                  </span>
-                  {showAvailableOnly && (
-                    <motion.div layoutId="active-dot" className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="mt-12 text-gray-300 cursor-pointer"
-              onClick={() => window.scrollTo({ top: window.innerHeight * 0.8, behavior: 'smooth' })}
-            >
-              <ChevronDown size={24} strokeWidth={1} />
-            </motion.div>
+            )}
           </motion.div>
         </div>
+
+        {/* Cinematic Scroll Indicator */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.5, duration: 1 }}
+          className="absolute bottom-12 flex flex-col items-center gap-4 cursor-pointer group"
+          onClick={() => {
+            const container = document.querySelector('.snap-parent');
+            if (container) {
+              container.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
+            }
+          }}
+        >
+          <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-gray-400 group-hover:text-black transition-colors">Experience High-End</span>
+          <motion.div
+            animate={{ y: [0, 8, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-gray-300 group-hover:text-black transition-colors"
+          >
+            <ChevronDown size={20} strokeWidth={1} />
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* Refined Product Grid */}
-      <div className="max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-32">
+      <div className="snap-child max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-32">
         <div className="flex items-center justify-between mb-12 md:mb-20 px-2">
           <div>
             <h3 className="text-2xl md:text-4xl font-serif italic">Our Collection</h3>

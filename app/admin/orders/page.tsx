@@ -9,6 +9,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { getRandomToast } from "@/lib/kannada-toasts";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 
 interface OrderItem {
     id?: string;
@@ -195,26 +196,48 @@ Thank you for shopping with us. We hope you love your purchase!`;
                 {/* Order Items */}
                 <div className="space-y-3 mb-4 border-b border-gray-50 pb-4">
                     {items.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-start">
-                            <div className="flex-1">
-                                <h3 className="font-medium text-sm leading-tight">{item.title}</h3>
-                                {item.color && item.size && (
-                                    <div className="flex gap-3 mt-1.5">
-                                        <span className="text-xs text-gray-500">
-                                            Color: <span className="font-medium text-gray-700">{item.color}</span>
-                                        </span>
-                                        <span className="text-xs text-gray-500">
-                                            Size: <span className="font-medium text-gray-700">{item.size}</span>
-                                        </span>
-                                        {item.quantity && item.quantity > 1 && (
-                                            <span className="text-xs text-gray-500">
-                                                Qty: <span className="font-medium text-gray-700">{item.quantity}</span>
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
+                        <div key={idx} className="flex justify-between items-start gap-4">
+                            <div className="flex gap-4 flex-1 min-w-0">
+                                {/* Product Thumbnail */}
+                                <div className="w-16 h-20 bg-gray-50 rounded-xl overflow-hidden shrink-0 border border-gray-100 relative shadow-sm">
+                                    {(item.image || (idx === 0 && order.order_items?.[0]?.image)) ? (
+                                        <Image
+                                            src={item.image || order.order_items?.[0]?.image || "/placeholder.jpg"}
+                                            alt={item.title}
+                                            fill
+                                            className="object-cover"
+                                        />
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full">
+                                            <Package size={16} className="text-gray-200" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-medium text-sm leading-tight truncate">{item.title}</h3>
+                                    {(item.color || item.size) && (
+                                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
+                                            {item.color && (
+                                                <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                                                    Color: <span className="font-bold text-gray-900">{item.color}</span>
+                                                </span>
+                                            )}
+                                            {item.size && (
+                                                <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                                                    Size: <span className="font-bold text-gray-900">{item.size}</span>
+                                                </span>
+                                            )}
+                                            {item.quantity && item.quantity > 1 && (
+                                                <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                                                    Qty: <span className="font-bold text-gray-900">{item.quantity}</span>
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <span className="font-serif text-sm font-medium ml-3">₹{item.price.toLocaleString()}</span>
+                            <span className="font-serif text-sm font-medium ml-1 whitespace-nowrap">₹{item.price.toLocaleString()}</span>
                         </div>
                     ))}
                 </div>

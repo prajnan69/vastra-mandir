@@ -152,3 +152,28 @@ h6 {
         mask-size: 100% 100%;
     }
 }
+
+/* Scroll Snapping */
+.snap-parent {
+    scroll-snap-type: y mandatory;
+    height: 100dvh;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.snap-child {
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    min-height: 100dvh;
+}
+
+/* Desktop optimization - optional but good */
+@media (min-width: 1024px) {
+    .snap-parent {
+        scrollbar-width: none;
+    }
+
+    .snap-parent::-webkit-scrollbar {
+        display: none;
+    }
+}

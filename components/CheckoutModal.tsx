@@ -15,6 +15,9 @@ interface CheckoutModalProps {
     product: {
         title: string;
         price: number;
+        images?: string[];
+        size?: string;
+        color?: string;
     };
     isCartCheckout?: boolean;
 }
@@ -181,7 +184,14 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                     item_title: product.title,
                     item_price: product.price,
                     status: 'paid_online', // Optimistic for "App Payment" flow
-                    order_items: isCartCheckout ? cart : [{ title: product.title, price: product.price }]
+                    order_items: isCartCheckout ? cart : [{
+                        title: product.title,
+                        price: product.price,
+                        image: product.images?.[0],
+                        size: product.size,
+                        color: product.color,
+                        quantity: 1
+                    }]
                 }]);
 
             if (error) console.error("Error saving order:", error);
@@ -216,7 +226,14 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
                     item_title: product.title,
                     item_price: product.price,
                     status: mode === 'online' ? 'paid_online' : 'cod_pending',
-                    order_items: isCartCheckout ? cart : [{ title: product.title, price: product.price }]
+                    order_items: isCartCheckout ? cart : [{
+                        title: product.title,
+                        price: product.price,
+                        image: product.images?.[0],
+                        size: product.size,
+                        color: product.color,
+                        quantity: 1
+                    }]
                 }]);
 
             if (error) {
