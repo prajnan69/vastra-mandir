@@ -70,7 +70,7 @@ export default function Home() {
           : 'bg-transparent py-6'
           }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
           <div className="w-10 md:hidden"></div> {/* Balance for mobile */}
 
           <div className="hidden md:flex items-center gap-6">
@@ -82,14 +82,14 @@ export default function Home() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col items-center"
+            className="flex flex-col items-center flex-1"
           >
-            <h1 className="text-xl md:text-3xl font-serif tracking-[0.3em] uppercase text-black">Vastra Mandir</h1>
+            <h1 className="text-xl md:text-3xl font-serif tracking-[0.2em] sm:tracking-[0.3em] uppercase text-black">Vastra Mandir</h1>
             {!scrolled && (
               <motion.span
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="text-[8px] md:text-[10px] uppercase tracking-[0.4em] text-gray-400 mt-1"
+                className="text-[7px] sm:text-[10px] uppercase tracking-[0.3em] sm:tracking-[0.4em] text-gray-400 mt-1"
               >
                 The Essence of Tradition
               </motion.span>
@@ -98,9 +98,9 @@ export default function Home() {
 
           <button
             onClick={() => setCartOpen(true)}
-            className="w-10 h-10 flex items-center justify-center relative hover:bg-gray-100 rounded-full transition-all group scale-100 active:scale-90"
+            className="w-10 h-10 flex items-center justify-center relative hover:bg-gray-100/50 rounded-full transition-all group scale-100 active:scale-90"
           >
-            <ShoppingBag size={20} className="group-hover:scale-110 transition-transform" />
+            <ShoppingBag size={20} className="group-hover:scale-110 transition-transform" strokeWidth={1.5} />
             <AnimatePresence>
               {cart.length > 0 && (
                 <motion.span
@@ -142,9 +142,9 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl md:text-8xl font-serif italic text-gray-900 leading-[1.1] tracking-tight"
+            className="text-4xl sm:text-6xl md:text-8xl font-serif italic text-gray-900 leading-[1.1] tracking-tight"
           >
-            Crafting Elegance <br /> In Every Thread
+            Crafting Elegance <br className="sm:hidden" /> In Every Thread
           </motion.h2>
 
           <motion.div
@@ -158,28 +158,30 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col items-center gap-6 w-full max-w-2xl">
-              {/* Category Filter Chips */}
-              <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 w-full">
-                {categories.map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat as string)}
-                    className={`px-5 py-2 md:px-7 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 scale-100 h-10 md:h-12 flex items-center shadow-sm ${selectedCategory === cat
+              <div className="w-full">
+                {/* Category Filter Chips - Scrollable on mobile */}
+                <div className="flex overflow-x-auto sm:flex-wrap items-center justify-start sm:justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-2 scrollbar-hide">
+                  {categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat as string)}
+                      className={`px-5 py-2 md:px-7 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 h-10 md:h-12 flex items-center shadow-sm ${selectedCategory === cat
                         ? 'bg-black text-white shadow-xl shadow-black/10'
                         : 'bg-white/50 backdrop-blur-md text-gray-400 border border-gray-100 hover:border-black/10 hover:text-black'
-                      }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
+                        }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setShowAvailableOnly(!showAvailableOnly)}
                   className={`group relative overflow-hidden px-8 py-4 rounded-full transition-all duration-500 flex items-center gap-3 active:scale-95 h-10 md:h-12 border ${showAvailableOnly
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-lg shadow-emerald-500/5'
-                      : 'bg-white/50 backdrop-blur-md text-gray-900 border-gray-100 hover:border-black/20 shadow-sm'
+                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-lg shadow-emerald-500/5'
+                    : 'bg-white/50 backdrop-blur-md text-gray-900 border-gray-100 hover:border-black/20 shadow-sm'
                     }`}
                 >
                   <SlidersHorizontal size={14} className={showAvailableOnly ? 'animate-pulse' : ''} />

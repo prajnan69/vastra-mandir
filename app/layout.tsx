@@ -15,6 +15,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false, // Prevent zooming issues on inputs
   themeColor: "#FFFFFF",
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {

@@ -287,7 +287,7 @@ Thank you for shopping with us. We hope you love your purchase!`;
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20">
+        <div className="min-h-screen bg-gray-50 pb-20 sm:pb-32 pb-safe">
             {/* Header */}
             <div className="bg-white px-4 py-4 sticky top-0 z-10 border-b border-gray-200 shadow-sm">
                 <div className="flex items-center gap-4 mb-4">

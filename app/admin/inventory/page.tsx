@@ -154,7 +154,7 @@ export default function InventoryPage() {
     );
 
     return (
-        <div className="min-h-screen bg-[#FDFDFD] pb-32">
+        <div className="min-h-screen bg-[#FDFDFD] pb-32 pb-safe">
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-md px-6 py-6 sticky top-0 z-10 border-b border-gray-100">
                 <div className="flex items-center gap-4 mb-4">

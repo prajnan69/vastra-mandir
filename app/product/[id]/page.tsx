@@ -229,7 +229,7 @@ export default function ProductPage() {
                 </div>
             </motion.header>
 
-            <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-[1.2fr,0.8fr] gap-12 lg:gap-24 py-8">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-[1.2fr,0.8fr] gap-8 lg:gap-24 py-4 md:py-8 lg:py-12">
                 {/* Visuals - High End Gallery */}
                 <div className="space-y-6">
                     <motion.div
@@ -446,7 +446,7 @@ export default function ProductPage() {
                         </div>
 
                         {/* Global Actions */}
-                        <div className="fixed bottom-0 left-0 right-0 p-4 lg:p-0 lg:relative lg:block z-[70] bg-white/80 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-t border-gray-100 lg:border-none">
+                        <div className="fixed bottom-0 left-0 right-0 p-4 lg:p-0 lg:relative lg:block z-[70] bg-white/80 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-t border-gray-100 lg:border-none pb-safe">
                             <div className="max-w-md mx-auto flex gap-4">
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
