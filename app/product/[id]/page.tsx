@@ -8,7 +8,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     // Fetch product details for SEO/Metadata on server
     const { data: item } = await supabase
         .from('items')
-        .select('title, price, description, images')
+        .select('title, price, description, images, category')
         .eq('id', id)
         .single();
 

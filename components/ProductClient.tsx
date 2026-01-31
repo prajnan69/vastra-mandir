@@ -27,6 +27,7 @@ interface Item {
     variants?: Variant[];
     size?: string;
     color?: string;
+    category?: string;
 }
 
 interface ProductClientProps {
@@ -482,7 +483,7 @@ export default function ProductClient({ initialItem }: ProductClientProps) {
                                 <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
                                     <ShieldCheck size={14} />
                                 </div>
-                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Authentic Batte</span>
+                                <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Authentic {item.category ? item.category.charAt(0).toUpperCase() + item.category.slice(1).toLowerCase() : 'Batte'}</span>
                             </div>
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
@@ -501,26 +502,26 @@ export default function ProductClient({ initialItem }: ProductClientProps) {
                         </div>
 
                         {/* Global Actions */}
-                        <div className="fixed bottom-0 left-0 right-0 p-4 lg:p-0 lg:relative lg:block z-[70] bg-white/80 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-t border-gray-100 lg:border-none pb-safe">
-                            <div className="max-w-md mx-auto flex gap-4">
+                        <div className="fixed bottom-0 left-0 right-0 p-4 lg:p-0 lg:relative lg:block z-[70] bg-white lg:bg-transparent shadow-[0_-8px_30px_rgb(0,0,0,0.04)] lg:shadow-none border-t border-gray-100 lg:border-none pb-safe">
+                            <div className="flex gap-3 px-2">
                                 <motion.button
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     animate={isAdded ? { scale: [1, 1.05, 1] } : {}}
                                     onClick={handleAddToCart}
-                                    className={`flex-1 h-16 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 group border-2 ${isAdded
+                                    className={`flex-1 h-14 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2.5 group border-2 ${isAdded
                                         ? 'bg-emerald-500 border-emerald-500 text-white'
-                                        : 'bg-white border-black text-black hover:bg-black hover:text-white'
+                                        : 'bg-white border-black text-black'
                                         }`}
                                 >
                                     {isAdded ? (
                                         <>
-                                            <Check size={18} />
-                                            Added!
+                                            <Check size={16} />
+                                            Added
                                         </>
                                     ) : (
                                         <>
-                                            <ShoppingBag size={18} className="group-hover:translate-y-[-1px] transition-transform" />
+                                            <ShoppingBag size={16} />
                                             Add to Bag
                                         </>
                                     )}
@@ -529,10 +530,10 @@ export default function ProductClient({ initialItem }: ProductClientProps) {
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => validateSelection() && setIsCheckoutOpen(true)}
-                                    className="flex-[1.5] bg-black text-white h-16 rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.2em] shadow-2xl shadow-black/20 flex items-center justify-center gap-3 group"
+                                    className="flex-1 bg-black text-white h-14 rounded-2xl text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-black/10 flex items-center justify-center gap-2.5 group"
                                 >
                                     Secure Checkout
-                                    <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                                    <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                                 </motion.button>
                             </div>
                         </div>
