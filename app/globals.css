@@ -153,18 +153,31 @@ h6 {
     }
 }
 
-/* Scroll Snapping */
-.snap-parent {
-    scroll-snap-type: y mandatory;
-    height: 100dvh;
-    overflow-y: auto;
-    scroll-behavior: smooth;
+/* Scroll Snapping - Mobile focus, Disable on PC for better flexibility */
+@media (max-width: 1024px) {
+    .snap-parent {
+        scroll-snap-type: y mandatory;
+        height: 100dvh;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+    }
+
+    .snap-child {
+        scroll-snap-align: start;
+        scroll-snap-stop: always;
+        min-height: 100dvh;
+    }
 }
 
-.snap-child {
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    min-height: 100dvh;
+@media (min-width: 1025px) {
+    .snap-parent {
+        height: auto;
+        overflow-y: visible;
+    }
+
+    .snap-child {
+        min-height: auto;
+    }
 }
 
 /* Desktop optimization - optional but good */

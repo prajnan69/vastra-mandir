@@ -37,7 +37,9 @@ export default function ProductPage() {
     const [item, setItem] = useState<Item | null>(null);
     const [loading, setLoading] = useState(true);
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false); // Renamed from scrolled
+    const [isPriority, setIsPriority] = useState(false); // New state
+    const [showPriorityOptions, setShowPriorityOptions] = useState(false); // New state
     const [isAdded, setIsAdded] = useState(false);
 
     // Selection State
@@ -52,7 +54,7 @@ export default function ProductPage() {
             fetchItem(params.id as string);
         }
 
-        const handleScroll = () => setScrolled(window.scrollY > 100);
+        const handleScroll = () => setIsScrolled(window.scrollY > 100); // Updated to setIsScrolled
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, [params]);
@@ -190,7 +192,7 @@ export default function ProductPage() {
             <motion.header
                 initial={{ y: -20, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
-                className={`sticky top-0 z-[60] px-4 py-4 md:py-6 flex items-center justify-between transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-gray-100' : 'bg-transparent'
+                className={`sticky top-0 z-[60] px-4 py-4 md:py-6 flex items-center justify-between transition-all duration-500 ${isScrolled ? 'bg-white/80 backdrop-blur-xl border-b border-gray-100' : 'bg-transparent' // Updated to isScrolled
                     }`}
             >
                 <Link href="/" className="w-10 h-10 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all active:scale-90">
@@ -198,7 +200,7 @@ export default function ProductPage() {
                 </Link>
 
                 <AnimatePresence>
-                    {scrolled && (
+                    {isScrolled && ( // Updated to isScrolled
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -211,7 +213,7 @@ export default function ProductPage() {
                     )}
                 </AnimatePresence>
 
-                {!scrolled && <span className="font-serif text-lg tracking-[0.2em] uppercase">Vastra Mandir</span>}
+                {!isScrolled && <span className="font-serif text-lg tracking-[0.2em] uppercase">Vastra Mandir</span>} {/* Updated to isScrolled */}
 
                 <div className="flex items-center gap-2">
                     <button onClick={handleShare} className="w-10 h-10 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded-full shadow-sm hover:bg-white transition-all active:scale-90">
@@ -235,12 +237,12 @@ export default function ProductPage() {
                 </div>
             </motion.header>
 
-            <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-[1.2fr,0.8fr] gap-8 lg:gap-24 py-4 md:py-8 lg:py-12">
+            <div className="max-w-7xl mx-auto px-4 md:px-8 lg:px-12 grid lg:grid-cols-2 gap-8 lg:gap-20 py-4 md:py-8 lg:py-12 items-start">
                 {/* Visuals - High End Gallery */}
-                <div className="space-y-6">
+                <div className="space-y-6 lg:sticky lg:top-32">
                     <motion.div
                         layoutId={`product-image-${item.id}`}
-                        className="relative aspect-[3/4] bg-gray-50 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/5"
+                        className="relative aspect-[3/4] lg:max-h-[80vh] bg-gray-50 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-black/5"
                     >
                         <AnimatePresence mode="wait">
                             <motion.div
@@ -339,17 +341,29 @@ export default function ProductPage() {
                             </div>
 
                             {/* Delivery Highlight */}
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 }}
-                                className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-amber-50/50 rounded-xl border border-amber-100/50 mt-2"
-                            >
-                                <div className="w-6 h-6 rounded-lg bg-amber-400 flex items-center justify-center shadow-sm">
-                                    <Truck size={12} className="text-white" />
-                                </div>
-                                <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-amber-900 font-bold">Delivery within 2 days</span>
-                            </motion.div>
+                            <div className="flex flex-col gap-2 mt-2">
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="inline-flex items-center gap-2.5 px-3 py-1.5 bg-emerald-50/50 rounded-xl border border-emerald-100/50 w-fit"
+                                >
+                                    <div className="w-5 h-5 rounded-lg bg-emerald-500 flex items-center justify-center shadow-sm">
+                                        <Truck size={12} className="text-white" />
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-900">Delivery in 2 days - FREE</span>
+                                </motion.div>
+
+                                {!showPriorityOptions && (
+                                    <button
+                                        onClick={() => setShowPriorityOptions(true)}
+                                        className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-amber-600 hover:text-amber-700 transition-colors pl-1 group"
+                                    >
+                                        <Sparkles size={10} className="animate-pulse" />
+                                        Need it faster?⚡
+                                        <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Interaction: Variants */}
@@ -440,6 +454,72 @@ export default function ProductPage() {
                             </div>
                         )}
 
+                        {/* Shipping Mode Selection */}
+                        <AnimatePresence>
+                            {showPriorityOptions && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div id="shipping-options" className="space-y-6 pt-8 scroll-mt-32">
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">Shipping Experience</span>
+                                            <span className="text-[9px] text-gray-300 uppercase tracking-widest font-medium">Select Speed</span>
+                                        </div>
+                                        <div className="grid gap-3">
+                                            {/* Standard Free */}
+                                            <button
+                                                onClick={() => setIsPriority(false)}
+                                                className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between group ${!isPriority ? 'border-emerald-500 bg-emerald-50/50 shadow-lg shadow-emerald-200/10' : 'border-gray-50 bg-gray-50/30'}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${!isPriority ? 'bg-emerald-500 text-white' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                                                        <Truck size={18} />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className={`text-[11px] font-bold uppercase tracking-widest ${!isPriority ? 'text-emerald-900' : 'text-gray-400'}`}>Standard Delivery</p>
+                                                        <p className="text-[10px] text-gray-400">Delivered within 2-3 days</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-widest ${!isPriority ? 'text-emerald-600' : 'text-gray-400'}`}>FREE</span>
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${!isPriority ? 'bg-emerald-500 border-emerald-500' : 'border-gray-200'}`}>
+                                                        {!isPriority && <Check size={12} className="text-white" />}
+                                                    </div>
+                                                </div>
+                                            </button>
+
+                                            {/* Priority Express */}
+                                            <button
+                                                onClick={() => {
+                                                    setIsPriority(true);
+                                                }}
+                                                className={`w-full p-4 rounded-2xl border-2 transition-all flex items-center justify-between group ${isPriority ? 'border-amber-400 bg-amber-50/50 shadow-lg shadow-amber-200/20' : 'border-gray-50 bg-gray-50/30'}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${isPriority ? 'bg-amber-400 text-white' : 'bg-white text-gray-400 border border-gray-100'}`}>
+                                                        <Sparkles size={18} />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className={`text-[11px] font-bold uppercase tracking-widest ${isPriority ? 'text-amber-900' : 'text-gray-400'}`}>One-Day Express</p>
+                                                        <p className="text-[10px] text-gray-400">Priority 24h fulfillment</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isPriority ? 'text-amber-600' : 'text-gray-400'}`}>+₹50</span>
+                                                    <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${isPriority ? 'bg-amber-400 border-amber-400' : 'border-gray-200'}`}>
+                                                        {isPriority && <Check size={12} className="text-white" />}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
                         {/* Product Utility Info */}
                         <div className="grid grid-cols-2 gap-4 py-8 border-y border-gray-50">
                             <div className="flex items-center gap-3">
@@ -513,6 +593,7 @@ export default function ProductPage() {
                     size: selectedSize || item?.size
                 }}
                 isCartCheckout={false}
+                initialIsUrgent={isPriority}
             />
         </div>
     );

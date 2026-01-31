@@ -22,9 +22,10 @@ interface CheckoutModalProps {
         color?: string;
     };
     isCartCheckout?: boolean;
+    initialIsUrgent?: boolean;
 }
 
-export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout = false }: CheckoutModalProps) {
+export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout = false, initialIsUrgent = false }: CheckoutModalProps) {
     const { cart, clearCart } = useCart();
     const [step, setStep] = useState<1 | 2 | 3>(1);
     const [loading, setLoading] = useState(false);
@@ -34,10 +35,17 @@ export default function CheckoutModal({ isOpen, onClose, product, isCartCheckout
         phone: "",
         pincode: "",
     });
-    const [isUrgent, setIsUrgent] = useState(false);
+    const [isUrgent, setIsUrgent] = useState(initialIsUrgent);
     const [paymentVpa, setPaymentVpa] = useState("7892460628@axl"); // Fallback default
 
     const WHATSAPP_PHONE = "8660627034";
+
+    // Sync with prop when modal opens
+    useEffect(() => {
+        if (isOpen) {
+            setIsUrgent(initialIsUrgent);
+        }
+    }, [initialIsUrgent, isOpen]);
 
     // Fetch UPI ID from database
     useEffect(() => {

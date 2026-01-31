@@ -30,12 +30,27 @@ export default function Home() {
   useEffect(() => {
     fetchItems();
 
+    const isDesktop = window.innerWidth > 1024;
     const parent = document.querySelector('.snap-parent');
+
     const handleScroll = () => {
-      if (parent) setScrolled(parent.scrollTop > 50);
+      if (isDesktop) {
+        setScrolled(window.scrollY > 50);
+      } else if (parent) {
+        setScrolled(parent.scrollTop > 50);
+      }
     };
-    parent?.addEventListener("scroll", handleScroll);
-    return () => parent?.removeEventListener("scroll", handleScroll);
+
+    if (isDesktop) {
+      window.addEventListener("scroll", handleScroll);
+    } else {
+      parent?.addEventListener("scroll", handleScroll);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      parent?.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   const fetchItems = async () => {
@@ -55,10 +70,10 @@ export default function Home() {
     }
   };
 
-  const categories = ["All", ...Array.from(new Set(items.map(item => item.category).filter(Boolean)))];
+  const categories = ["All", ...Array.from(new Set(items.map(item => item.category?.trim().toUpperCase()).filter(Boolean)))];
 
   const filteredItems = items.filter(item => {
-    const isCategoryMatch = selectedCategory === "All" || item.category === selectedCategory;
+    const isCategoryMatch = selectedCategory === "All" || item.category?.trim().toUpperCase() === selectedCategory;
     const isAvailabilityMatch = !showAvailableOnly || !item.is_sold_out;
     return isCategoryMatch && isAvailabilityMatch;
   });
