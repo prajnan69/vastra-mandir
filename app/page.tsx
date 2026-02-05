@@ -317,9 +317,9 @@ export default function Home() {
                               container.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
                             }
                           }}
-                          className={`px-6 py-2.5 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all ${selectedCategory === cat
-                            ? 'bg-black text-white'
-                            : 'bg-gray-50 text-gray-400 hover:text-black'
+                          className={`px-8 py-3.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shadow-lg border ${selectedCategory === cat
+                            ? 'bg-black text-white border-black shadow-black/20'
+                            : 'bg-gray-50/50 backdrop-blur-xl text-gray-400 border-gray-100 hover:text-black hover:border-black/20 shadow-black/5'
                             }`}
                         >
                           {cat}
