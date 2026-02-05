@@ -180,39 +180,7 @@ export default function Home() {
               Discover a curated collection where traditional craftsmanship meets modern sophistication.
             </p>
 
-            {categories.length > 1 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.8 }}
-                className="flex flex-col items-center gap-6 w-full max-w-2xl mt-12 overflow-hidden"
-              >
-                <div className="w-full relative px-4">
-                  {/* Premium Category Filter Chips */}
-                  <div className="flex overflow-x-auto items-center justify-start sm:justify-center gap-2.5 md:gap-4 pb-6 scrollbar-hide">
-                    {categories.map((cat, idx) => (
-                      <motion.button
-                        key={cat}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.7 + (idx * 0.05) }}
-                        onClick={() => setSelectedCategory(cat as string)}
-                        className={`px-6 py-2.5 md:px-8 md:py-3.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 flex items-center shadow-lg border ${selectedCategory === cat
-                          ? 'bg-black text-white border-black shadow-black/20'
-                          : 'bg-white/40 backdrop-blur-xl text-gray-500 border-white/50 hover:border-black/20 hover:text-black hover:bg-white/60 shadow-black/5'
-                          }`}
-                      >
-                        {cat}
-                      </motion.button>
-                    ))}
-                  </div>
-
-                  {/* Decorative faint indicators for scroll */}
-                  <div className="absolute left-0 top-0 bottom-6 w-8 bg-gradient-to-r from-[#FCFCFC] to-transparent sm:hidden pointer-events-none" />
-                  <div className="absolute right-0 top-0 bottom-6 w-8 bg-gradient-to-l from-[#FCFCFC] to-transparent sm:hidden pointer-events-none" />
-                </div>
-              </motion.div>
-            )}
+            {/* Hero content simplified - filters relocated to bottom dock */}
           </motion.div>
         </div>
 
@@ -241,7 +209,7 @@ export default function Home() {
       </section>
 
       {/* Refined Product Grid */}
-      <div className="snap-child max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-32">
+      <div id="collection-header" className="snap-child max-w-7xl mx-auto px-4 md:px-8 py-12 md:py-32">
         <div className="flex items-center justify-between mb-12 md:mb-20 px-2">
           <div>
             <h3 className="text-2xl md:text-4xl font-serif italic">Our Collection</h3>
@@ -282,63 +250,36 @@ export default function Home() {
         )}
       </div>
 
-      {/* Mobile Floating Filter Button */}
+      {/* Premium Floating Filter Dock - Bottom Center */}
       <AnimatePresence>
-        {showFAB && (
+        {showFAB && categories.length > 1 && (
           <motion.div
-            initial={{ opacity: 0, y: 100 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] sm:hidden"
+            initial={{ opacity: 0, y: 100, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 100, x: "-50%" }}
+            className="fixed bottom-10 left-1/2 z-[100] w-full max-w-lg px-6"
           >
-            <div className="relative">
-              <AnimatePresence>
-                {isFilterOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                    className="absolute bottom-full mb-6 left-1/2 -translate-x-1/2 w-[90vw] bg-white/90 backdrop-blur-2xl rounded-[2.5rem] shadow-2xl border border-white/20 p-6 space-y-4"
-                  >
-                    <div className="flex justify-between items-center mb-2 px-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Filter By Category</span>
-                      <button onClick={() => setIsFilterOpen(false)} className="text-gray-400"><X size={16} /></button>
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-center">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => {
-                            setSelectedCategory(cat as string);
-                            setIsFilterOpen(false);
-                            // Scroll to collection header
-                            const container = document.querySelector('.snap-parent');
-                            if (container) {
-                              container.scrollTo({ top: window.innerHeight, behavior: 'smooth' });
-                            }
-                          }}
-                          className={`px-8 py-3.5 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 shadow-lg border ${selectedCategory === cat
-                            ? 'bg-black text-white border-black shadow-black/20'
-                            : 'bg-gray-50/50 backdrop-blur-xl text-gray-400 border-gray-100 hover:text-black hover:border-black/20 shadow-black/5'
-                            }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className={`h-14 px-8 rounded-full shadow-2xl flex items-center gap-3 transition-colors duration-500 bg-black text-white shadow-black/20`}
-              >
-                <SlidersHorizontal size={18} />
-                <span className="text-[11px] font-bold uppercase tracking-[0.2em]">{selectedCategory === "All" ? "Filter" : selectedCategory}</span>
-              </motion.button>
+            <div className="bg-white/40 backdrop-blur-2xl border border-white/50 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-2 flex items-center gap-2 overflow-hidden overflow-x-auto scrollbar-hide">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => {
+                    setSelectedCategory(cat as string);
+                    // Smooth scroll to collection
+                    const container = document.querySelector('.snap-parent');
+                    const target = document.getElementById('collection-header');
+                    if (container && target) {
+                      container.scrollTo({ top: target.offsetTop - 100, behavior: 'smooth' });
+                    }
+                  }}
+                  className={`px-6 py-3 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 flex items-center h-10 ${selectedCategory === cat
+                    ? 'bg-black text-white shadow-lg shadow-black/20'
+                    : 'text-gray-500 hover:text-black hover:bg-white/40'
+                    }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
           </motion.div>
         )}
