@@ -181,25 +181,37 @@ export default function Home() {
             </p>
 
             {categories.length > 1 && (
-              <div className="hidden sm:flex flex-col items-center gap-6 w-full max-w-2xl animate-fade-in">
-                <div className="w-full">
-                  {/* Category Filter Chips - Scrollable on mobile */}
-                  <div className="flex overflow-x-auto sm:flex-wrap items-center justify-center gap-2 md:gap-3 w-full pb-4 sm:pb-0 px-4 scrollbar-hide">
-                    {categories.map((cat) => (
-                      <button
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6, duration: 0.8 }}
+                className="flex flex-col items-center gap-6 w-full max-w-2xl mt-12 overflow-hidden"
+              >
+                <div className="w-full relative px-4">
+                  {/* Premium Category Filter Chips */}
+                  <div className="flex overflow-x-auto items-center justify-start sm:justify-center gap-2.5 md:gap-4 pb-6 scrollbar-hide">
+                    {categories.map((cat, idx) => (
+                      <motion.button
                         key={cat}
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.7 + (idx * 0.05) }}
                         onClick={() => setSelectedCategory(cat as string)}
-                        className={`px-5 py-2 md:px-7 md:py-2.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 h-10 md:h-12 flex items-center shadow-sm ${selectedCategory === cat
-                          ? 'bg-black text-white shadow-xl shadow-black/10'
-                          : 'bg-white/50 backdrop-blur-md text-gray-400 border border-gray-100 hover:border-black/10 hover:text-black'
+                        className={`px-6 py-2.5 md:px-8 md:py-3.5 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-500 flex-shrink-0 flex items-center shadow-lg border ${selectedCategory === cat
+                          ? 'bg-black text-white border-black shadow-black/20'
+                          : 'bg-white/40 backdrop-blur-xl text-gray-500 border-white/50 hover:border-black/20 hover:text-black hover:bg-white/60 shadow-black/5'
                           }`}
                       >
                         {cat}
-                      </button>
+                      </motion.button>
                     ))}
                   </div>
+
+                  {/* Decorative faint indicators for scroll */}
+                  <div className="absolute left-0 top-0 bottom-6 w-8 bg-gradient-to-r from-[#FCFCFC] to-transparent sm:hidden pointer-events-none" />
+                  <div className="absolute right-0 top-0 bottom-6 w-8 bg-gradient-to-l from-[#FCFCFC] to-transparent sm:hidden pointer-events-none" />
                 </div>
-              </div>
+              </motion.div>
             )}
           </motion.div>
         </div>
