@@ -6,7 +6,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function CartDrawer() {
-    const { cart, cartOpen, setCartOpen, removeFromCart, updateQuantity } = useCart();
+    const { cart, cartOpen, setCartOpen, removeFromCart, updateQuantity, setCheckoutOpen } = useCart();
 
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -154,9 +154,7 @@ export default function CartDrawer() {
                                     whileTap={{ scale: 0.98 }}
                                     onClick={() => {
                                         setCartOpen(false);
-                                        // We'll rely on the global checkout modal trigger
-                                        // or if specialized, trigger it here.
-                                        // For now, consistent with existing logic.
+                                        setCheckoutOpen(true);
                                     }}
                                     className="w-full bg-black text-white py-5 rounded-[2rem] text-xs font-bold uppercase tracking-[0.2em] shadow-xl shadow-black/10 flex items-center justify-center gap-3 group"
                                 >

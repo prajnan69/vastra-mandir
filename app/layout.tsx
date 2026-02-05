@@ -4,6 +4,7 @@ import "./globals.css";
 import ServiceWorkerRegister from "@/components/ServiceWorkerRegister";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
+import GlobalCheckout from "@/components/GlobalCheckout";
 import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -63,6 +64,7 @@ export default function RootLayout({
         <CartProvider>
           {children}
           <CartDrawer />
+          <GlobalCheckout />
         </CartProvider>
         <ServiceWorkerRegister />
         <Toaster position="top-center" richColors expand={true} />
