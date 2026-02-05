@@ -88,9 +88,9 @@ export default function Home() {
     <main className="snap-parent bg-[#FCFCFC]">
       {/* Premium Sticky Header */}
       <header
-        className={`sticky top-0 z-50 transition-all duration-500 ${scrolled
-          ? 'bg-white/80 backdrop-blur-xl border-b border-gray-100 py-3'
-          : 'bg-transparent py-6'
+        className={`sticky top-0 z-50 transition-all duration-700 ${scrolled
+          ? 'bg-white/70 backdrop-blur-2xl border-b border-white/20 py-2 shadow-[0_10px_30px_rgba(0,0,0,0.02)]'
+          : 'bg-white/30 backdrop-blur-lg border-b border-white/10 py-5'
           }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
