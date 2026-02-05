@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Loader2, Eye, EyeOff, Share2, Edit2, Check, X, Trash2, Package, Search } from "lucide-react";
+import { ArrowLeft, Loader2, Eye, EyeOff, Share2, Edit2, Check, X, Trash2, Package, Search, Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -41,9 +41,28 @@ export default function InventoryPage() {
     const [searchQuery, setSearchQuery] = useState("");
 
     // Full Edit Modal State
+    const [isSaving, setIsSaving] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Item | null>(null);
-    const [isSaving, setIsSaving] = useState(false);
+    const [existingCategories, setExistingCategories] = useState<string[]>(["Saree", "Shirt", "Accessories"]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const { data, error } = await supabase
+                .from('items')
+                .select('category')
+                .eq('is_deleted', false);
+
+            if (data && !error) {
+                const unique = Array.from(new Set(data.map(i => i.category?.trim()).filter(Boolean))) as string[];
+                if (unique.length > 0) {
+                    const combined = Array.from(new Set([...unique, "Saree", "Shirt", "Accessories"]));
+                    setExistingCategories(combined);
+                }
+            }
+        };
+        fetchCategories();
+    }, []);
 
     useEffect(() => {
         fetchItems();
@@ -182,6 +201,7 @@ export default function InventoryPage() {
                     description: editingItem.description,
                     price: editingItem.price,
                     mrp: editingItem.mrp,
+                    category: editingItem.category,
                     variants: editingItem.variants
                 })
                 .eq('id', editingItem.id);
@@ -459,6 +479,44 @@ export default function InventoryPage() {
                                                 onChange={e => setEditingItem({ ...editingItem, mrp: parseFloat(e.target.value) || null })}
                                                 className="w-full bg-white border border-zinc-200 rounded-2xl py-4 px-5 font-medium text-zinc-500 outline-none"
                                             />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mb-3 block ml-1">Category</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {existingCategories.map((cat) => (
+                                                <button
+                                                    key={cat}
+                                                    type="button"
+                                                    onClick={() => setEditingItem({ ...editingItem, category: cat })}
+                                                    className={`px-4 py-2 rounded-full text-[10px] font-bold transition-all ${editingItem.category === cat
+                                                        ? 'bg-black text-white shadow-lg'
+                                                        : 'bg-zinc-100 text-zinc-500 hover:bg-zinc-200'}`}
+                                                >
+                                                    {cat}
+                                                </button>
+                                            ))}
+                                            <div className="flex items-center gap-2 border border-dashed border-zinc-200 rounded-full px-3 py-1 ml-1 bg-white">
+                                                <input
+                                                    type="text"
+                                                    placeholder="Custom..."
+                                                    className="w-20 bg-transparent text-[10px] font-bold uppercase outline-none"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            const val = e.currentTarget.value.trim();
+                                                            if (val) {
+                                                                setEditingItem({ ...editingItem, category: val });
+                                                                if (!existingCategories.includes(val)) {
+                                                                    setExistingCategories([...existingCategories, val]);
+                                                                }
+                                                                e.currentTarget.value = '';
+                                                            }
+                                                        }
+                                                    }}
+                                                />
+                                                <Plus size={12} className="text-zinc-400" />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

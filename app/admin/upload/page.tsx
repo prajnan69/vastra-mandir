@@ -52,6 +52,26 @@ export default function AdminUploadPage() {
     const [category, setCategory] = useState("Saree"); // Default
     const [customCategory, setCustomCategory] = useState("");
     const [isAddingCustomCategory, setIsAddingCustomCategory] = useState(false);
+    const [existingCategories, setExistingCategories] = useState<string[]>(["Saree", "Shirt", "Accessories"]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            const { data, error } = await supabase
+                .from('items')
+                .select('category')
+                .eq('is_deleted', false);
+
+            if (data && !error) {
+                const unique = Array.from(new Set(data.map(i => i.category?.trim()).filter(Boolean))) as string[];
+                if (unique.length > 0) {
+                    // Combine with defaults and set
+                    const combined = Array.from(new Set([...unique, "Saree", "Shirt", "Accessories"]));
+                    setExistingCategories(combined);
+                }
+            }
+        };
+        fetchCategories();
+    }, []);
 
     // Variants State
     const [variants, setVariants] = useState<Variant[]>([]);
@@ -499,7 +519,7 @@ export default function AdminUploadPage() {
                             <label className="text-xs uppercase text-zinc-400 font-bold tracking-wider ml-1 mb-2 block">Category</label>
                             {!isAddingCustomCategory ? (
                                 <div className="flex flex-wrap gap-2">
-                                    {["Saree", "Shirt", "Accessories"].map((cat) => (
+                                    {existingCategories.map((cat) => (
                                         <button
                                             key={cat}
                                             type="button"
